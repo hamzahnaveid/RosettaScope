@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "285205377793",
+    "project_id": "rosetta-scope",
+    "storage_bucket": "rosetta-scope.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:285205377793:android:7da0675cad45629a87e100",
+        "android_client_info": {
+          "package_name": "com.example.rosettascope"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBpKZE1FIOHDHJMZ8i35zyaTwG9zsaPJ6E"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
