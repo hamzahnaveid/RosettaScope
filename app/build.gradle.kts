@@ -3,6 +3,7 @@ plugins {
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.google.gms.google.services)
+    id("androidx.navigation.safeargs.kotlin")
 }
 
 android {
@@ -37,7 +38,9 @@ android {
     }
     buildFeatures {
         compose = true
+        viewBinding = true
     }
+
 }
 
 dependencies {
@@ -54,8 +57,16 @@ dependencies {
     implementation(libs.androidx.credentials)
     implementation(libs.androidx.credentials.play.services.auth)
     implementation(libs.googleid)
+    implementation(libs.androidx.constraintlayout)
+    implementation(libs.androidx.localbroadcastmanager)
+    implementation(libs.androidx.fragment.ktx)
+    implementation(libs.androidx.activity.ktx)
+    implementation(libs.androidx.navigation.fragment.ktx)
+    implementation(libs.androidx.navigation.ui.ktx)
     implementation(libs.androidx.navigation.compose)
     implementation(libs.androidx.compose.runtime.livedata)
+    implementation(libs.androidx.appcompat)
+
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
@@ -63,9 +74,10 @@ dependencies {
     androidTestImplementation(libs.androidx.compose.ui.test.junit4)
     debugImplementation(libs.androidx.compose.ui.tooling)
     debugImplementation(libs.androidx.compose.ui.test.manifest)
-    implementation("com.google.mediapipe:tasks-audio:latest.release")
+    implementation("com.google.mediapipe:tasks-vision:0.10.26.1")
     implementation(libs.androidx.camera.core)
     implementation(libs.androidx.camera.compose)
     implementation(libs.androidx.camera.lifecycle)
     implementation(libs.androidx.camera.camera2)
+    implementation(libs.androidx.camera.view)
 }
