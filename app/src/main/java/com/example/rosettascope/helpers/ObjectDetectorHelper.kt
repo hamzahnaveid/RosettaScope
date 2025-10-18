@@ -76,7 +76,7 @@ class ObjectDetectorHelper(
             }
         }
 
-        val modelName = "ssd_mobilenet_v2.tflite"
+        val modelName = "efficientdet_lite2.tflite"
 
         baseOptionsBuilder.setModelAssetPath(modelName)
 
