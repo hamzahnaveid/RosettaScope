@@ -21,6 +21,7 @@ navigation = "2.7.7"
 navigationCompose = "2.9.5"
 runtimeLivedata = "1.9.3"
 camerax = "1.5.0-alpha06"
+retrofit = "2.10.0"
 appcompat = "1.7.1"
 
 [libraries]
@@ -59,6 +60,8 @@ androidx-camera-lifecycle = { group = "androidx.camera", name = "camera-lifecycl
 # The specific camera implementation that renders the preview
 androidx-camera-camera2 = { module = "androidx.camera:camera-camera2", version.ref = "camerax" }
 androidx-camera-view = { group = "androidx.camera", name = "camera-view", version.ref = "camerax" }
+retrofit = { group = "com.squareup.retrofit2", name = "retrofit", version.ref = "retrofit" }
+retrofit-converter-gson = { group = "com.squareup.retrofit2", name = "converter-gson", version.ref = "retrofit" }
 androidx-appcompat = { group = "androidx.appcompat", name = "appcompat", version.ref = "appcompat" }
 
 [plugins]
