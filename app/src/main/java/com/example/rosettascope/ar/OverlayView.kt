@@ -7,6 +7,7 @@ import android.graphics.Paint
 import android.graphics.Rect
 import android.graphics.RectF
 import android.util.AttributeSet
+import android.view.MotionEvent
 import android.view.View
 import androidx.core.content.ContextCompat
 import com.example.rosettascope.R
@@ -15,7 +16,16 @@ import com.google.mediapipe.tasks.vision.objectdetector.ObjectDetectorResult
 import kotlin.math.max
 
 class OverlayView(context: Context?, attrs: AttributeSet?) : View(context, attrs) {
+
+    interface OnBoxTapListener {
+        fun onBoxTapped(word: String)
+    }
+
+    private var tapListener: OnBoxTapListener? = null
+
     private var results: ObjectDetectorResult? = null
+
+    private val boxRects = mutableListOf<Pair<RectF, String>>()
     private var boxPaint = Paint()
     private var textBackgroundPaint = Paint()
     private var textPaint = Paint()
@@ -28,6 +38,10 @@ class OverlayView(context: Context?, attrs: AttributeSet?) : View(context, attrs
 
     init {
         initPaints()
+    }
+
+    fun setOnBoxTapListener(listener: OnBoxTapListener) {
+        this.tapListener = listener
     }
 
     fun clear() {
@@ -57,8 +71,23 @@ class OverlayView(context: Context?, attrs: AttributeSet?) : View(context, attrs
         boxPaint.style = Paint.Style.STROKE
     }
 
+    override fun onTouchEvent(event: MotionEvent?): Boolean {
+        if (event?.action == MotionEvent.ACTION_DOWN) {
+            val x = event.x
+            val y = event.y
+            for ((rect, label) in boxRects) {
+                if (rect.contains(x, y)) {
+                    tapListener?.onBoxTapped(label)
+                    break
+                }
+            }
+        }
+        return true
+    }
+
     override fun draw(canvas: Canvas) {
         super.draw(canvas)
+        boxRects.clear()
         results?.detections()?.map {
             val boxRect = RectF(
                 it.boundingBox().left,
@@ -115,6 +144,8 @@ class OverlayView(context: Context?, attrs: AttributeSet?) : View(context, attrs
                 top + bounds.height(),
                 textPaint
             )
+
+            boxRects.add(Pair(drawableRect, category.categoryName()))
         }
     }
 
