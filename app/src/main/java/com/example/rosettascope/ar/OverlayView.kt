@@ -47,6 +47,7 @@ class OverlayView(context: Context?, attrs: AttributeSet?) : View(context, attrs
 
     fun clear() {
         results = null
+        boxRects.clear()
         textPaint.reset()
         textBackgroundPaint.reset()
         boxPaint.reset()
@@ -74,13 +75,10 @@ class OverlayView(context: Context?, attrs: AttributeSet?) : View(context, attrs
 
     override fun onTouchEvent(event: MotionEvent?): Boolean {
         if (event?.action == MotionEvent.ACTION_DOWN) {
-            Log.d("OverlayView", "Touch at x=${event.x}, y=${event.y}")
             val x = event.x
             val y = event.y
             for ((rect, label) in boxRects) {
-                Log.d("OverlayView", "Checking rect=$rect for label=$label")
                 if (rect.contains(x, y)) {
-                    Log.d("OverlayView", "Tapped inside box for label=$label")
                     tapListener?.onBoxTapped(label)
                     break
                 }
@@ -173,8 +171,6 @@ class OverlayView(context: Context?, attrs: AttributeSet?) : View(context, attrs
             width * 1f / rotatedWidthHeight.first,
             height * 1f / rotatedWidthHeight.second
         )
-
-        Log.d("OverlayView", "Detections count = ${detectionResults.detections().size}")
 
         invalidate()
     }

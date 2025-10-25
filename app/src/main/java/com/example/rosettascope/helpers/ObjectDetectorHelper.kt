@@ -35,7 +35,7 @@ class ObjectDetectorHelper(
     var maxResults: Int = MAX_RESULTS_DEFAULT,
     var currentDelegate: Int = DELEGATE_CPU,
     var currentModel: Int = MODEL_EFFICIENTDETV0,
-    var runningMode: RunningMode = RunningMode.IMAGE,
+    var runningMode: RunningMode = RunningMode.LIVE_STREAM,
     val context: Context,
     // The listener is only used when running in RunningMode.LIVE_STREAM
     var objectDetectorListener: DetectorListener? = null
@@ -80,21 +80,6 @@ class ObjectDetectorHelper(
 
         baseOptionsBuilder.setModelAssetPath(modelName)
 
-        // Check if runningMode is consistent with objectDetectorListener
-        when (runningMode) {
-            RunningMode.LIVE_STREAM -> {
-                if (objectDetectorListener == null) {
-                    throw IllegalStateException(
-                        "objectDetectorListener must be set when runningMode is LIVE_STREAM."
-                    )
-                }
-            }
-
-            RunningMode.IMAGE, RunningMode.VIDEO -> {
-                // no-op
-            }
-        }
-
         try {
             val optionsBuilder = ObjectDetector.ObjectDetectorOptions.builder()
                 .setBaseOptions(baseOptionsBuilder.build())
@@ -104,16 +89,9 @@ class ObjectDetectorHelper(
             imageProcessingOptions = ImageProcessingOptions.builder()
                 .setRotationDegrees(imageRotation).build()
 
-            when (runningMode) {
-                RunningMode.IMAGE, RunningMode.VIDEO -> optionsBuilder.setRunningMode(
-                    runningMode
-                )
-
-                RunningMode.LIVE_STREAM -> optionsBuilder.setRunningMode(
-                    runningMode
-                ).setResultListener(this::returnLivestreamResult)
-                    .setErrorListener(this::returnLivestreamError)
-            }
+            optionsBuilder.setRunningMode(runningMode)
+                .setResultListener(this::returnLivestreamResult)
+                .setErrorListener(this::returnLivestreamError)
 
             val options = optionsBuilder.build()
             objectDetector = ObjectDetector.createFromOptions(context, options)
@@ -142,12 +120,6 @@ class ObjectDetectorHelper(
     // Runs object detection on live streaming cameras frame-by-frame and returns the results
     // asynchronously to the caller.
     fun detectLivestreamFrame(imageProxy: ImageProxy) {
-
-        if (runningMode != RunningMode.LIVE_STREAM) {
-            throw IllegalArgumentException(
-                "Attempting to call detectLivestreamFrame" + " while not using RunningMode.LIVE_STREAM"
-            )
-        }
 
         val frameTime = SystemClock.uptimeMillis()
 

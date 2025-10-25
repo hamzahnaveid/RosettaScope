@@ -60,7 +60,6 @@ class CameraFragment : Fragment(), ObjectDetectorHelper.DetectorListener {
         get() = _fragmentCameraBinding!!
 
     private var currentDialog: AlertDialog? = null
-    private var currentWord: String? = null
     private var currentAudioBase64: String? = null
     private var mediaPlayer: MediaPlayer? = null
 
@@ -166,8 +165,6 @@ class CameraFragment : Fragment(), ObjectDetectorHelper.DetectorListener {
         fragmentCameraBinding.overlay.setRunningMode(RunningMode.LIVE_STREAM)
         fragmentCameraBinding.overlay.setOnBoxTapListener(object : OverlayView.OnBoxTapListener {
             override fun onBoxTapped(word: String) {
-                currentWord = word
-                Toast.makeText(requireContext(), word, Toast.LENGTH_SHORT).show()
                 translationViewModel.translateWord(word, "es")
                 showLoadingDialog(word)
             }
@@ -261,7 +258,10 @@ class CameraFragment : Fragment(), ObjectDetectorHelper.DetectorListener {
             if (_fragmentCameraBinding != null) {
                 // Pass necessary information to OverlayView for drawing on the canvas
                 val detectionResult = resultBundle.results[0]
-                if (isAdded) {
+                if (detectionResult.detections().isEmpty()) {
+                    fragmentCameraBinding.overlay.clear()
+                }
+                else if (isAdded) {
                     fragmentCameraBinding.overlay.setResults(
                         detectionResult,
                         resultBundle.inputImageHeight,
@@ -291,7 +291,6 @@ class CameraFragment : Fragment(), ObjectDetectorHelper.DetectorListener {
 
         translationViewModel.errorMessage.observe(viewLifecycleOwner) { error ->
             hideLoadingDialog()
-            // show error
             AlertDialog.Builder(requireContext())
                 .setTitle("Error")
                 .setMessage(error ?: "Unknown error")
