@@ -7,6 +7,8 @@ import androidx.navigation.fragment.NavHostFragment
 import androidx.navigation.ui.setupWithNavController
 import com.example.rosettascope.databinding.ActivityMainBinding
 import com.example.rosettascope.viewmodels.CameraViewModel
+import kotlin.getValue
+
 
 class CameraActivity : AppCompatActivity() {
 

@@ -7,6 +7,7 @@ import android.graphics.Paint
 import android.graphics.Rect
 import android.graphics.RectF
 import android.util.AttributeSet
+import android.util.Log
 import android.view.MotionEvent
 import android.view.View
 import androidx.core.content.ContextCompat
@@ -73,10 +74,13 @@ class OverlayView(context: Context?, attrs: AttributeSet?) : View(context, attrs
 
     override fun onTouchEvent(event: MotionEvent?): Boolean {
         if (event?.action == MotionEvent.ACTION_DOWN) {
+            Log.d("OverlayView", "Touch at x=${event.x}, y=${event.y}")
             val x = event.x
             val y = event.y
             for ((rect, label) in boxRects) {
+                Log.d("OverlayView", "Checking rect=$rect for label=$label")
                 if (rect.contains(x, y)) {
+                    Log.d("OverlayView", "Tapped inside box for label=$label")
                     tapListener?.onBoxTapped(label)
                     break
                 }
@@ -87,7 +91,6 @@ class OverlayView(context: Context?, attrs: AttributeSet?) : View(context, attrs
 
     override fun draw(canvas: Canvas) {
         super.draw(canvas)
-        boxRects.clear()
         results?.detections()?.map {
             val boxRect = RectF(
                 it.boundingBox().left,
@@ -171,11 +174,12 @@ class OverlayView(context: Context?, attrs: AttributeSet?) : View(context, attrs
             height * 1f / rotatedWidthHeight.second
         )
 
+        Log.d("OverlayView", "Detections count = ${detectionResults.detections().size}")
+
         invalidate()
     }
 
     companion object {
         private  const val BOUNDING_RECT_TEXT_PADDING = 8
     }
-
 }

@@ -16,12 +16,16 @@
 package com.example.rosettascope.fragments
 
 import android.annotation.SuppressLint
+import android.app.AlertDialog
 import android.content.res.Configuration
+import android.media.MediaPlayer
 import android.os.Bundle
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.Button
+import android.widget.TextView
 import android.widget.Toast
 import androidx.camera.core.AspectRatio
 import androidx.camera.core.Camera
@@ -33,10 +37,14 @@ import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
+import androidx.fragment.app.viewModels
 import androidx.navigation.Navigation
+import com.example.rosettascope.R
+import com.example.rosettascope.ar.OverlayView
 import com.example.rosettascope.databinding.FragmentCameraBinding
 import com.example.rosettascope.helpers.ObjectDetectorHelper
 import com.example.rosettascope.viewmodels.CameraViewModel
+import com.example.rosettascope.viewmodels.TranslationViewModel
 import com.google.mediapipe.tasks.vision.core.RunningMode
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
@@ -51,8 +59,14 @@ class CameraFragment : Fragment(), ObjectDetectorHelper.DetectorListener {
     private val fragmentCameraBinding
         get() = _fragmentCameraBinding!!
 
+    private var currentDialog: AlertDialog? = null
+    private var currentWord: String? = null
+    private var currentAudioBase64: String? = null
+    private var mediaPlayer: MediaPlayer? = null
+
     private lateinit var objectDetectorHelper: ObjectDetectorHelper
     private val viewModel: CameraViewModel by activityViewModels()
+    private val translationViewModel: TranslationViewModel by viewModels()
     private var preview: Preview? = null
     private var imageAnalyzer: ImageAnalysis? = null
     private var camera: Camera? = null
@@ -105,6 +119,9 @@ class CameraFragment : Fragment(), ObjectDetectorHelper.DetectorListener {
             Long.MAX_VALUE,
             TimeUnit.NANOSECONDS
         )
+
+        mediaPlayer?.release()
+        mediaPlayer = null
     }
 
     override fun onCreateView(
@@ -147,8 +164,17 @@ class CameraFragment : Fragment(), ObjectDetectorHelper.DetectorListener {
 
         // Attach listeners to UI control widgets
         fragmentCameraBinding.overlay.setRunningMode(RunningMode.LIVE_STREAM)
-    }
+        fragmentCameraBinding.overlay.setOnBoxTapListener(object : OverlayView.OnBoxTapListener {
+            override fun onBoxTapped(word: String) {
+                currentWord = word
+                Toast.makeText(requireContext(), word, Toast.LENGTH_SHORT).show()
+                translationViewModel.translateWord(word, "es")
+                showLoadingDialog(word)
+            }
+        })
 
+        observeViewModel()
+    }
     // Initialize CameraX, and prepare to bind the camera use cases
     private fun setUpCamera() {
         val cameraProviderFuture =
@@ -253,6 +279,78 @@ class CameraFragment : Fragment(), ObjectDetectorHelper.DetectorListener {
     override fun onError(error: String, errorCode: Int) {
         activity?.runOnUiThread {
             Toast.makeText(requireContext(), error, Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    private fun observeViewModel() {
+        translationViewModel.translationResult.observe(viewLifecycleOwner) { response ->
+            hideLoadingDialog()
+            currentAudioBase64 = response.pronunciation_audio_base64
+            showResultDialog(response.translated_word)
+        }
+
+        translationViewModel.errorMessage.observe(viewLifecycleOwner) { error ->
+            hideLoadingDialog()
+            // show error
+            AlertDialog.Builder(requireContext())
+                .setTitle("Error")
+                .setMessage(error ?: "Unknown error")
+                .setPositiveButton("OK", null)
+                .show()
+        }
+    }
+
+    private fun showLoadingDialog(word: String) {
+        val builder = AlertDialog.Builder(requireContext())
+        builder.setTitle("Translating \"$word\"...")
+        builder.setCancelable(false)
+        currentDialog = builder.create()
+        currentDialog?.show()
+    }
+
+    private fun hideLoadingDialog() {
+        currentDialog?.dismiss()
+        currentDialog = null
+    }
+
+    private fun showResultDialog(translatedWord: String) {
+        val view = LayoutInflater.from(requireContext()).inflate(R.layout.dialog_translation, null)
+        val tvTranslated: TextView = view.findViewById(R.id.textview_translation)
+        val btnPlay: Button = view.findViewById(R.id.button_play)
+        val btnRecord: Button = view.findViewById(R.id.button_record)
+
+        tvTranslated.text = translatedWord
+
+        val dialog = AlertDialog.Builder(requireContext())
+            .setTitle("Translation")
+            .setView(view)
+            .setNegativeButton("Close", null)
+            .create()
+
+        btnPlay.setOnClickListener {
+            currentAudioBase64?.let { playAudioFromBase64(it) }
+        }
+        btnRecord.setOnClickListener {
+            //TODO
+        }
+
+        dialog.show()
+    }
+
+    private fun playAudioFromBase64(base64Audio: String) {
+        val audioBytes = android.util.Base64.decode(base64Audio, android.util.Base64.DEFAULT)
+        val tempFile = kotlin.io.path.createTempFile(suffix = ".mp3").toFile()
+        tempFile.writeBytes(audioBytes)
+
+        mediaPlayer?.release()
+        mediaPlayer = MediaPlayer()
+        mediaPlayer?.apply {
+            setDataSource(tempFile.absolutePath)
+            prepare()
+            start()
+            setOnCompletionListener {
+                tempFile.delete()
+            }
         }
     }
 }
