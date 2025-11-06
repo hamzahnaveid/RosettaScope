@@ -4,8 +4,8 @@ import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 
 object RetrofitInstance {
-    //using local IP address
-    private const val BASE_URL = "http://192.168.1.28:8000"
+    //accessing API through ngrok tunnel
+    private const val BASE_URL = "https://subopaquely-unirradiative-bradley.ngrok-free.dev"
 
     val api: TranslationApiService by lazy {
         Retrofit.Builder()

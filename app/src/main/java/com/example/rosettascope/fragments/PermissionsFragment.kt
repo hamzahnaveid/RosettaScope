@@ -13,7 +13,9 @@ import androidx.navigation.Navigation
 import com.example.rosettascope.R
 
 
-private val PERMISSIONS_REQUIRED = arrayOf(Manifest.permission.CAMERA)
+private val CAMERA_PERMISSIONS_REQUIRED = arrayOf(Manifest.permission.CAMERA)
+private val RECORD_AUDIO_PERMISSIONS_REQUIRED = arrayOf(Manifest.permission.RECORD_AUDIO)
+
 class PermissionsFragment : Fragment() {
 
     private val requestPermissionLauncher =
@@ -35,11 +37,17 @@ class PermissionsFragment : Fragment() {
             ContextCompat.checkSelfPermission(
                 requireContext(),
                 Manifest.permission.CAMERA
+            ) == PackageManager.PERMISSION_GRANTED
+                    &&
+                ContextCompat.checkSelfPermission(
+                requireContext(),
+                Manifest.permission.RECORD_AUDIO
             ) == PackageManager.PERMISSION_GRANTED -> {
                 navigateToCamera()
             }
             else -> {
                 requestPermissionLauncher.launch(Manifest.permission.CAMERA)
+                requestPermissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
             }
         }
     }
@@ -57,11 +65,16 @@ class PermissionsFragment : Fragment() {
 
     companion object {
         fun hasPermissions(context: Context) =
-            PERMISSIONS_REQUIRED.all {
+            CAMERA_PERMISSIONS_REQUIRED.all {
                 ContextCompat.checkSelfPermission(
                     context,
                     it
                 ) == PackageManager. PERMISSION_GRANTED
+            } && RECORD_AUDIO_PERMISSIONS_REQUIRED.all {
+                ContextCompat.checkSelfPermission(
+                    context,
+                    it
+                ) == PackageManager.PERMISSION_GRANTED
             }
     }
 }

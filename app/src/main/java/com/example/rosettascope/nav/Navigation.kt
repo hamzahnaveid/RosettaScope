@@ -5,7 +5,6 @@ import androidx.compose.ui.Modifier
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import com.example.rosettascope.CameraActivity
 import com.example.rosettascope.screens.HomeScreen
 import com.example.rosettascope.screens.LoginScreen
 import com.example.rosettascope.screens.SignupScreen

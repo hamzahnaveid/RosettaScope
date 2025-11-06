@@ -17,9 +17,12 @@ package com.example.rosettascope.fragments
 
 import android.annotation.SuppressLint
 import android.app.AlertDialog
+import android.content.ContextWrapper
 import android.content.res.Configuration
 import android.media.MediaPlayer
+import android.media.MediaRecorder
 import android.os.Bundle
+import android.os.Environment
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
@@ -34,6 +37,7 @@ import androidx.camera.core.ImageAnalysis
 import androidx.camera.core.ImageAnalysis.OUTPUT_IMAGE_FORMAT_RGBA_8888
 import androidx.camera.core.Preview
 import androidx.camera.lifecycle.ProcessCameraProvider
+import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
@@ -46,6 +50,8 @@ import com.example.rosettascope.helpers.ObjectDetectorHelper
 import com.example.rosettascope.viewmodels.CameraViewModel
 import com.example.rosettascope.viewmodels.TranslationViewModel
 import com.google.mediapipe.tasks.vision.core.RunningMode
+import java.io.File
+import java.io.IOException
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
@@ -61,12 +67,16 @@ class CameraFragment : Fragment(), ObjectDetectorHelper.DetectorListener {
 
     private var currentDialog: AlertDialog? = null
     private var currentAudioBase64: String? = null
+
     private var mediaPlayer: MediaPlayer? = null
+    private var mediaRecorder: MediaRecorder? = null;
 
     private lateinit var objectDetectorHelper: ObjectDetectorHelper
+
     private val viewModel: CameraViewModel by activityViewModels()
     private val translationViewModel: TranslationViewModel by viewModels()
     private var preview: Preview? = null
+
     private var imageAnalyzer: ImageAnalysis? = null
     private var camera: Camera? = null
     private var cameraProvider: ProcessCameraProvider? = null
@@ -121,6 +131,9 @@ class CameraFragment : Fragment(), ObjectDetectorHelper.DetectorListener {
 
         mediaPlayer?.release()
         mediaPlayer = null
+
+        mediaRecorder?.release()
+        mediaRecorder = null
     }
 
     override fun onCreateView(
@@ -330,7 +343,14 @@ class CameraFragment : Fragment(), ObjectDetectorHelper.DetectorListener {
             currentAudioBase64?.let { playAudioFromBase64(it) }
         }
         btnRecord.setOnClickListener {
-            //TODO
+            if (btnRecord.text == "Stop Recording") {
+                stopRecording()
+                btnRecord.text = "Record Pronunciation"
+            }
+            else {
+                startRecording()
+                btnRecord.text = "Stop Recording"
+            }
         }
 
         dialog.show()
@@ -351,5 +371,39 @@ class CameraFragment : Fragment(), ObjectDetectorHelper.DetectorListener {
                 tempFile.delete()
             }
         }
+    }
+
+    private fun startRecording() {
+        mediaRecorder = MediaRecorder().apply {
+            setAudioSource(MediaRecorder.AudioSource.MIC)
+            setOutputFormat(MediaRecorder.OutputFormat.MPEG_4)
+            setOutputFile(getRecordingFilePath())
+            setAudioEncoder(MediaRecorder.AudioEncoder.AMR_NB)
+            setMaxDuration(10000)
+
+            try {
+                prepare()
+            } catch (e: IOException) {
+                Log.e("MediaRecorder", "prepare() failed")
+            }
+
+            start()
+        }
+    }
+
+    private fun stopRecording() {
+        mediaRecorder?.apply {
+            stop()
+            release()
+        }
+        mediaRecorder = null
+    }
+
+    //creating mp3 file for demo purposes
+    private fun getRecordingFilePath(): String {
+        val contextWrapper = ContextWrapper(requireContext())
+        val dir = contextWrapper.getExternalFilesDir(Environment.DIRECTORY_MUSIC)
+        val file = File(dir, "recording.mp3")
+        return file.absolutePath
     }
 }
