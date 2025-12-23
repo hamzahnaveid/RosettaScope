@@ -82,4 +82,5 @@ dependencies {
     implementation(libs.androidx.camera.view)
     implementation(libs.retrofit)
     implementation(libs.retrofit.converter.gson)
+    implementation("com.moizhassan.ffmpeg:ffmpeg-kit-16kb:6.1.1")
 }

@@ -7,9 +7,14 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.material3.Button
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExposedDropdownMenuBox
+import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -80,6 +85,15 @@ fun SignupScreen(modifier: Modifier = Modifier, navController: NavController, au
                 Text(text = "Password")
             }
         )
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        DisplayLangSpinner()
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        DisplayProficiencySpinner()
+
         Spacer(modifier = Modifier.height(16.dp))
 
         Button(onClick = {
@@ -94,6 +108,80 @@ fun SignupScreen(modifier: Modifier = Modifier, navController: NavController, au
             navController.navigate("login")
         }) {
             Text(text = "Already have an account? Login")
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun DisplayLangSpinner() {
+    val parentOptions = listOf("English","Mandarin Chinese","German","French","Spanish","Korean","Japanese","Russian")
+    var expandedState by remember { mutableStateOf(false) }
+    var selectedOption by remember { mutableStateOf(parentOptions[0]) }
+
+    ExposedDropdownMenuBox(expanded = expandedState,
+        onExpandedChange = { expandedState = !expandedState }) {
+
+        TextField(
+            value = selectedOption,
+            onValueChange = {},
+            readOnly = true,
+            modifier = Modifier.menuAnchor(),
+            trailingIcon = {
+                ExposedDropdownMenuDefaults.TrailingIcon(expanded = expandedState)
+            })
+
+        ExposedDropdownMenu(expanded = expandedState,
+            onDismissRequest = { expandedState = false }) {
+
+            parentOptions.forEach {
+                item ->
+                DropdownMenuItem(text = {
+                    Text(text = item)
+                }, onClick = {
+
+                    selectedOption = item
+                    expandedState = false
+
+                })
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun DisplayProficiencySpinner() {
+    val parentOptions = listOf("Beginner","Intermediate","Advanced")
+    var expandedState by remember { mutableStateOf(false) }
+    var selectedOption by remember { mutableStateOf(parentOptions[0]) }
+
+    ExposedDropdownMenuBox(expanded = expandedState,
+        onExpandedChange = { expandedState = !expandedState }) {
+
+        TextField(
+            value = selectedOption,
+            onValueChange = {},
+            readOnly = true,
+            modifier = Modifier.menuAnchor(),
+            trailingIcon = {
+                ExposedDropdownMenuDefaults.TrailingIcon(expanded = expandedState)
+            })
+
+        ExposedDropdownMenu(expanded = expandedState,
+            onDismissRequest = { expandedState = false }) {
+
+            parentOptions.forEach {
+                    item ->
+                DropdownMenuItem(text = {
+                    Text(text = item)
+                }, onClick = {
+
+                    selectedOption = item
+                    expandedState = false
+
+                })
+            }
         }
     }
 }

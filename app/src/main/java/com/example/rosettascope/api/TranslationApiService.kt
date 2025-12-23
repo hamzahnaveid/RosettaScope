@@ -1,5 +1,6 @@
 package com.example.rosettascope.api
 
+import com.google.gson.Gson
 import retrofit2.http.Body
 import retrofit2.http.POST
 
@@ -13,7 +14,20 @@ data class TranslationResponse(
     val pronunciation_audio_base64: String? = null
 )
 
+data class GradingRequest(
+    val refText: String,
+    val targetLanguage: String,
+    val recordingAudioBytes: String
+)
+
+data class GradingResponse(
+    val result: String
+)
+
 interface TranslationApiService {
     @POST("/translate")
     suspend fun translateWord(@Body request: TranslationRequest): TranslationResponse
+
+    @POST("/grade")
+    suspend fun gradeSpeech(@Body request: GradingRequest): GradingResponse
 }

@@ -17,12 +17,14 @@ package com.example.rosettascope.fragments
 
 import android.annotation.SuppressLint
 import android.app.AlertDialog
+import android.app.Application
 import android.content.ContextWrapper
 import android.content.res.Configuration
 import android.media.MediaPlayer
 import android.media.MediaRecorder
 import android.os.Bundle
 import android.os.Environment
+import android.os.FileUtils
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
@@ -43,6 +45,8 @@ import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
 import androidx.fragment.app.viewModels
 import androidx.navigation.Navigation
+import com.arthenica.ffmpegkit.FFmpegKit
+import com.arthenica.ffmpegkit.ReturnCode
 import com.example.rosettascope.R
 import com.example.rosettascope.ar.OverlayView
 import com.example.rosettascope.databinding.FragmentCameraBinding
@@ -55,6 +59,8 @@ import java.io.IOException
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
+import kotlin.io.encoding.Base64
+import kotlin.io.path.createTempFile
 
 class CameraFragment : Fragment(), ObjectDetectorHelper.DetectorListener {
 
@@ -91,7 +97,7 @@ class CameraFragment : Fragment(), ObjectDetectorHelper.DetectorListener {
         if (!PermissionsFragment.hasPermissions(requireContext())) {
             Navigation.findNavController(
                 requireActivity(),
-                com.example.rosettascope.R.id.fragment_container
+                R.id.fragment_container
             )
                 .navigate(CameraFragmentDirections.actionCameraToPermissions())
         }
@@ -358,7 +364,7 @@ class CameraFragment : Fragment(), ObjectDetectorHelper.DetectorListener {
 
     private fun playAudioFromBase64(base64Audio: String) {
         val audioBytes = android.util.Base64.decode(base64Audio, android.util.Base64.DEFAULT)
-        val tempFile = kotlin.io.path.createTempFile(suffix = ".mp3").toFile()
+        val tempFile = createTempFile(suffix = ".mp3").toFile()
         tempFile.writeBytes(audioBytes)
 
         mediaPlayer?.release()
@@ -397,13 +403,40 @@ class CameraFragment : Fragment(), ObjectDetectorHelper.DetectorListener {
             release()
         }
         mediaRecorder = null
+
+        val contextWrapper = ContextWrapper(requireContext())
+        val dir = contextWrapper.getExternalFilesDir(Environment.DIRECTORY_MUSIC)
+        val file = File(dir, "recording.wav")
+        val bytes = file.readBytes()
+        val bytesString = android.util.Base64.encodeToString(bytes, android.util.Base64.DEFAULT)
     }
 
     //creating mp3 file for demo purposes
     private fun getRecordingFilePath(): String {
         val contextWrapper = ContextWrapper(requireContext())
         val dir = contextWrapper.getExternalFilesDir(Environment.DIRECTORY_MUSIC)
-        val file = File(dir, "recording.mp3")
-        return file.absolutePath
+        val mp3File = File(dir, "recording.mp3")
+        val wavFile = File(dir, "recording.wav")
+
+        convertMp3ToWav(
+            mp3File, wavFile, onResult = { success -> mp3File.delete() }
+        )
+        return wavFile.absolutePath
+    }
+
+    private fun convertMp3ToWav(inputMp3: File, outputWav: File, onResult: (Boolean) -> Unit) {
+        val command = """
+                -y
+                -i "${inputMp3.absolutePath}"
+                -ac 1
+                -ar 16000
+                -sample_fmt s16
+                "${outputWav.absolutePath}"
+            """.trimIndent()
+
+        FFmpegKit.executeAsync(command) {session ->
+            val returnCode = session.returnCode
+            onResult(ReturnCode.isSuccess(returnCode))
+        }
     }
 }
