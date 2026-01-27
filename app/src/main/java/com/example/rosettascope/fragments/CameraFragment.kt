@@ -52,6 +52,7 @@ import com.example.rosettascope.ar.OverlayView
 import com.example.rosettascope.databinding.FragmentCameraBinding
 import com.example.rosettascope.helpers.ObjectDetectorHelper
 import com.example.rosettascope.viewmodels.CameraViewModel
+import com.example.rosettascope.viewmodels.GradingViewModel
 import com.example.rosettascope.viewmodels.TranslationViewModel
 import com.google.mediapipe.tasks.vision.core.RunningMode
 import java.io.File
@@ -72,7 +73,9 @@ class CameraFragment : Fragment(), ObjectDetectorHelper.DetectorListener {
         get() = _fragmentCameraBinding!!
 
     private var currentDialog: AlertDialog? = null
+
     private var currentAudioBase64: String? = null
+    private var translatedWord: String = ""
 
     private var mediaPlayer: MediaPlayer? = null
     private var mediaRecorder: MediaRecorder? = null;
@@ -81,6 +84,8 @@ class CameraFragment : Fragment(), ObjectDetectorHelper.DetectorListener {
 
     private val viewModel: CameraViewModel by activityViewModels()
     private val translationViewModel: TranslationViewModel by viewModels()
+    private val gradingViewModel: GradingViewModel by viewModels()
+
     private var preview: Preview? = null
 
     private var imageAnalyzer: ImageAnalysis? = null
@@ -189,7 +194,7 @@ class CameraFragment : Fragment(), ObjectDetectorHelper.DetectorListener {
             }
         })
 
-        observeViewModel()
+        observeTranslationViewModel()
     }
     // Initialize CameraX, and prepare to bind the camera use cases
     private fun setUpCamera() {
@@ -301,15 +306,34 @@ class CameraFragment : Fragment(), ObjectDetectorHelper.DetectorListener {
         }
     }
 
-    private fun observeViewModel() {
+    private fun observeTranslationViewModel() {
         translationViewModel.translationResult.observe(viewLifecycleOwner) { response ->
             hideLoadingDialog()
             currentAudioBase64 = response.pronunciation_audio_base64
-            showResultDialog(response.translated_word)
+            translatedWord = response.translated_word
+            showResultDialog(translatedWord)
         }
 
         translationViewModel.errorMessage.observe(viewLifecycleOwner) { error ->
             hideLoadingDialog()
+            AlertDialog.Builder(requireContext())
+                .setTitle("Error")
+                .setMessage(error ?: "Unknown error")
+                .setPositiveButton("OK", null)
+                .show()
+        }
+    }
+
+    private fun observeGradingViewModel() {
+        gradingViewModel.gradingResult.observe(viewLifecycleOwner) { response ->
+            AlertDialog.Builder(requireContext())
+                .setTitle("Grading Result")
+                .setMessage(response.result)
+                .setPositiveButton("OK", null)
+                .show()
+        }
+
+        gradingViewModel.errorMessage.observe(viewLifecycleOwner) { error ->
             AlertDialog.Builder(requireContext())
                 .setTitle("Error")
                 .setMessage(error ?: "Unknown error")
@@ -406,9 +430,12 @@ class CameraFragment : Fragment(), ObjectDetectorHelper.DetectorListener {
 
         val contextWrapper = ContextWrapper(requireContext())
         val dir = contextWrapper.getExternalFilesDir(Environment.DIRECTORY_MUSIC)
-        val file = File(dir, "recording.wav")
+        val file = File(dir, "recording.mp3")
         val bytes = file.readBytes()
-        val bytesString = android.util.Base64.encodeToString(bytes, android.util.Base64.DEFAULT)
+        //Log.d("WAV Bytes", bytes.copyOfRange(0, 12).joinToString(" "))
+        val bytesString = android.util.Base64.encodeToString(bytes, android.util.Base64.NO_WRAP)
+        gradingViewModel.gradeSpeech(translatedWord, "es", bytesString)
+        observeGradingViewModel()
     }
 
     //creating mp3 file for demo purposes
@@ -416,27 +443,6 @@ class CameraFragment : Fragment(), ObjectDetectorHelper.DetectorListener {
         val contextWrapper = ContextWrapper(requireContext())
         val dir = contextWrapper.getExternalFilesDir(Environment.DIRECTORY_MUSIC)
         val mp3File = File(dir, "recording.mp3")
-        val wavFile = File(dir, "recording.wav")
-
-        convertMp3ToWav(
-            mp3File, wavFile, onResult = { success -> mp3File.delete() }
-        )
-        return wavFile.absolutePath
-    }
-
-    private fun convertMp3ToWav(inputMp3: File, outputWav: File, onResult: (Boolean) -> Unit) {
-        val command = """
-                -y
-                -i "${inputMp3.absolutePath}"
-                -ac 1
-                -ar 16000
-                -sample_fmt s16
-                "${outputWav.absolutePath}"
-            """.trimIndent()
-
-        FFmpegKit.executeAsync(command) {session ->
-            val returnCode = session.returnCode
-            onResult(ReturnCode.isSuccess(returnCode))
-        }
+        return mp3File.absolutePath
     }
 }
