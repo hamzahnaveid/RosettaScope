@@ -43,13 +43,18 @@ import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
 import androidx.fragment.app.viewModels
 import androidx.navigation.Navigation
+import com.android.volley.Request
+import com.android.volley.toolbox.JsonObjectRequest
+import com.android.volley.toolbox.Volley
 import com.example.rosettascope.R
 import com.example.rosettascope.ar.OverlayView
 import com.example.rosettascope.databinding.FragmentCameraBinding
 import com.example.rosettascope.helpers.ObjectDetectorHelper
+import com.example.rosettascope.models.User
 import com.example.rosettascope.viewmodels.CameraViewModel
 import com.example.rosettascope.viewmodels.GradingViewModel
 import com.example.rosettascope.viewmodels.TranslationViewModel
+import com.google.gson.Gson
 import com.google.mediapipe.tasks.vision.core.RunningMode
 import java.io.File
 import java.io.IOException
@@ -81,7 +86,7 @@ class CameraFragment : Fragment(), ObjectDetectorHelper.DetectorListener {
     private val translationViewModel: TranslationViewModel by viewModels()
     private val gradingViewModel: GradingViewModel by viewModels()
 
-    private var targetLanguage: String = ""
+    private var user: User? = null
 
     private var preview: Preview? = null
 
@@ -159,8 +164,9 @@ class CameraFragment : Fragment(), ObjectDetectorHelper.DetectorListener {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        targetLanguage = context?.getSharedPreferences("USER", Context.MODE_PRIVATE)
-            ?.getString("target_language", "").toString()
+        val email = context?.getSharedPreferences("USER", Context.MODE_PRIVATE)
+            ?.getString("email", "").toString()
+        retrieveUser(email)
 
         // Initialize our background executor
         backgroundExecutor = Executors.newSingleThreadExecutor()
@@ -189,7 +195,7 @@ class CameraFragment : Fragment(), ObjectDetectorHelper.DetectorListener {
         fragmentCameraBinding.overlay.setRunningMode(RunningMode.LIVE_STREAM)
         fragmentCameraBinding.overlay.setOnBoxTapListener(object : OverlayView.OnBoxTapListener {
             override fun onBoxTapped(word: String) {
-                translationViewModel.translateWord(word, targetLanguage)
+                translationViewModel.translateWord(word, user?.targetLanguage.toString())
                 showLoadingDialog(word)
             }
         })
@@ -434,7 +440,7 @@ class CameraFragment : Fragment(), ObjectDetectorHelper.DetectorListener {
         val bytes = file.readBytes()
         //Log.d("WAV Bytes", bytes.copyOfRange(0, 12).joinToString(" "))
         val bytesString = android.util.Base64.encodeToString(bytes, android.util.Base64.NO_WRAP)
-        gradingViewModel.gradeSpeech(translatedWord, targetLanguage, bytesString)
+        gradingViewModel.gradeSpeech(translatedWord, user?.targetLanguage.toString(), bytesString)
         observeGradingViewModel()
     }
 
@@ -444,5 +450,29 @@ class CameraFragment : Fragment(), ObjectDetectorHelper.DetectorListener {
         val dir = contextWrapper.getExternalFilesDir(Environment.DIRECTORY_MUSIC)
         val mp3File = File(dir, "recording.mp3")
         return mp3File.absolutePath
+    }
+
+    private fun retrieveUser(email: String) {
+        val gson = Gson()
+        val queue = Volley.newRequestQueue(context);
+        val url = "https://gaston-distant-unamicably.ngrok-free.dev/user/$email"
+
+        val getUserRequest = JsonObjectRequest(
+            Request.Method.GET, url, null,
+            { response ->
+                val json = response.toString()
+                user = gson.fromJson(json, User::class.java)
+                Log.d("JavaDB", "User retrieved")
+            },
+            { error ->
+                Toast.makeText(
+                    context,
+                    "Error connecting to server",
+                    Toast.LENGTH_SHORT
+                )
+                    .show()
+                Log.e("VolleyRequest", error.toString())
+            })
+        queue.add(getUserRequest)
     }
 }

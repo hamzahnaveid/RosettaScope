@@ -94,19 +94,16 @@ fun LoginScreen(modifier: Modifier = Modifier, navController: NavController, aut
             }
             else {
                 val queue = Volley.newRequestQueue(context);
-                val url = "https://gaston-distant-unamicably.ngrok-free.dev/user/$email"
+                val url = "https://gaston-distant-unamicably.ngrok-free.dev/login?email=$email&password=$password"
 
                 val getUserRequest = JsonObjectRequest(
                     Request.Method.GET, url, null,
                     { response ->
-                        if (response.getString("email") == email && response.getString("password") == password) {
+                        if (response.getString("response").equals("success")) {
                             navController.navigate("home")
 
                             context.getSharedPreferences("USER", Context.MODE_PRIVATE)
                                 .edit().putString("email", email).apply()
-
-                            context.getSharedPreferences("USER", Context.MODE_PRIVATE)
-                                .edit().putString("target_language", response.getString("targetLanguage")).apply()
 
                             Toast.makeText(
                                 context,

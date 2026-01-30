@@ -34,7 +34,7 @@ import com.android.volley.toolbox.Volley
 import com.example.rosettascope.viewmodels.AuthViewModel
 import org.json.JSONObject
 
-    var targetLanguage = "English"
+var targetLanguage = "English"
     var proficiency  = "Beginner"
 @Composable
 fun SignupScreen(modifier: Modifier = Modifier, navController: NavController, authViewModel: AuthViewModel) {
@@ -122,7 +122,7 @@ fun SignupScreen(modifier: Modifier = Modifier, navController: NavController, au
                 }
 
                 val queue = Volley.newRequestQueue(context);
-                val url = "https://gaston-distant-unamicably.ngrok-free.dev/user-save"
+                val url = "https://gaston-distant-unamicably.ngrok-free.dev/signup"
 
                 val userJsonBody = JSONObject()
                 userJsonBody.put("email", email)
@@ -132,22 +132,27 @@ fun SignupScreen(modifier: Modifier = Modifier, navController: NavController, au
                 userJsonBody.put("wordsEncountered", 0)
                 userJsonBody.put("wordsMastered", 0)
 
-
                 val signUpRequest = JsonObjectRequest(Request.Method.POST, url, userJsonBody,
                     { response ->
-                        navController.navigate("home")
+                        if (response.getString("response").equals("success")) {
+                            navController.navigate("home")
 
-                        context.getSharedPreferences("USER", Context.MODE_PRIVATE)
-                            .edit().putString("email", email).apply()
+                            context.getSharedPreferences("USER", Context.MODE_PRIVATE)
+                                .edit().putString("email", email).apply()
 
-                        context.getSharedPreferences("USER", Context.MODE_PRIVATE)
-                            .edit().putString("target_language", targetLanguage).apply()
-
-                        Toast.makeText(
-                            context,
-                            "Account successfully created",
-                            Toast.LENGTH_SHORT)
-                            .show()
+                            Toast.makeText(
+                                context,
+                                "Account successfully created",
+                                Toast.LENGTH_SHORT)
+                                .show()
+                        }
+                        else {
+                            Toast.makeText(
+                                context,
+                                "Email already in use",
+                                Toast.LENGTH_SHORT)
+                                .show()
+                        }
                     },
                     { error ->
                         Toast.makeText(
