@@ -17,14 +17,13 @@ package com.example.rosettascope.fragments
 
 import android.annotation.SuppressLint
 import android.app.AlertDialog
-import android.app.Application
+import android.content.Context
 import android.content.ContextWrapper
 import android.content.res.Configuration
 import android.media.MediaPlayer
 import android.media.MediaRecorder
 import android.os.Bundle
 import android.os.Environment
-import android.os.FileUtils
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
@@ -39,14 +38,11 @@ import androidx.camera.core.ImageAnalysis
 import androidx.camera.core.ImageAnalysis.OUTPUT_IMAGE_FORMAT_RGBA_8888
 import androidx.camera.core.Preview
 import androidx.camera.lifecycle.ProcessCameraProvider
-import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
 import androidx.fragment.app.viewModels
 import androidx.navigation.Navigation
-import com.arthenica.ffmpegkit.FFmpegKit
-import com.arthenica.ffmpegkit.ReturnCode
 import com.example.rosettascope.R
 import com.example.rosettascope.ar.OverlayView
 import com.example.rosettascope.databinding.FragmentCameraBinding
@@ -60,7 +56,6 @@ import java.io.IOException
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
-import kotlin.io.encoding.Base64
 import kotlin.io.path.createTempFile
 
 class CameraFragment : Fragment(), ObjectDetectorHelper.DetectorListener {
@@ -85,6 +80,8 @@ class CameraFragment : Fragment(), ObjectDetectorHelper.DetectorListener {
     private val viewModel: CameraViewModel by activityViewModels()
     private val translationViewModel: TranslationViewModel by viewModels()
     private val gradingViewModel: GradingViewModel by viewModels()
+
+    private var targetLanguage: String = ""
 
     private var preview: Preview? = null
 
@@ -162,6 +159,9 @@ class CameraFragment : Fragment(), ObjectDetectorHelper.DetectorListener {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
+        targetLanguage = context?.getSharedPreferences("USER", Context.MODE_PRIVATE)
+            ?.getString("target_language", "").toString()
+
         // Initialize our background executor
         backgroundExecutor = Executors.newSingleThreadExecutor()
 
@@ -189,7 +189,7 @@ class CameraFragment : Fragment(), ObjectDetectorHelper.DetectorListener {
         fragmentCameraBinding.overlay.setRunningMode(RunningMode.LIVE_STREAM)
         fragmentCameraBinding.overlay.setOnBoxTapListener(object : OverlayView.OnBoxTapListener {
             override fun onBoxTapped(word: String) {
-                translationViewModel.translateWord(word, "es")
+                translationViewModel.translateWord(word, targetLanguage)
                 showLoadingDialog(word)
             }
         })
@@ -434,7 +434,7 @@ class CameraFragment : Fragment(), ObjectDetectorHelper.DetectorListener {
         val bytes = file.readBytes()
         //Log.d("WAV Bytes", bytes.copyOfRange(0, 12).joinToString(" "))
         val bytesString = android.util.Base64.encodeToString(bytes, android.util.Base64.NO_WRAP)
-        gradingViewModel.gradeSpeech(translatedWord, "es", bytesString)
+        gradingViewModel.gradeSpeech(translatedWord, targetLanguage, bytesString)
         observeGradingViewModel()
     }
 

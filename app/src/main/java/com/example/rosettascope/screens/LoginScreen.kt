@@ -1,5 +1,7 @@
 package com.example.rosettascope.screens
 
+import android.content.Context
+import android.util.Log
 import android.widget.Toast
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -11,9 +13,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -23,7 +23,9 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
-import com.example.rosettascope.viewmodels.AuthState
+import com.android.volley.Request
+import com.android.volley.toolbox.JsonObjectRequest
+import com.android.volley.toolbox.Volley
 import com.example.rosettascope.viewmodels.AuthViewModel
 
 @Composable
@@ -32,20 +34,20 @@ fun LoginScreen(modifier: Modifier = Modifier, navController: NavController, aut
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
 
-    val authState = authViewModel.authState.observeAsState()
+//    val authState = authViewModel.authState.observeAsState()
     val context = LocalContext.current
 
-    LaunchedEffect(authState.value) {
-        when (authState.value) {
-            is AuthState.Authenticated -> navController.navigate("home")
-            is AuthState.Error -> Toast.makeText(
-                context,
-                (authState.value as AuthState.Error).message,
-                Toast.LENGTH_SHORT)
-                .show()
-            else -> Unit
-        }
-    }
+//    LaunchedEffect(authState.value) {
+//        when (authState.value) {
+//            is AuthState.Authenticated -> navController.navigate("home")
+//            is AuthState.Error -> Toast.makeText(
+//                context,
+//                (authState.value as AuthState.Error).message,
+//                Toast.LENGTH_SHORT)
+//                .show()
+//            else -> Unit
+//        }
+//    }
 
     Column(modifier = modifier
         .fillMaxSize(),
@@ -83,7 +85,56 @@ fun LoginScreen(modifier: Modifier = Modifier, navController: NavController, aut
         Spacer(modifier = Modifier.height(16.dp))
 
         Button(onClick = {
-            authViewModel.login(email, password)
+            if (email.isEmpty() || password.isEmpty()) {
+                Toast.makeText(
+                    context,
+                    "Please fill all required fields",
+                    Toast.LENGTH_SHORT)
+                    .show()
+            }
+            else {
+                val queue = Volley.newRequestQueue(context);
+                val url = "https://gaston-distant-unamicably.ngrok-free.dev/user/$email"
+
+                val getUserRequest = JsonObjectRequest(
+                    Request.Method.GET, url, null,
+                    { response ->
+                        if (response.getString("email") == email && response.getString("password") == password) {
+                            navController.navigate("home")
+
+                            context.getSharedPreferences("USER", Context.MODE_PRIVATE)
+                                .edit().putString("email", email).apply()
+
+                            context.getSharedPreferences("USER", Context.MODE_PRIVATE)
+                                .edit().putString("target_language", response.getString("targetLanguage")).apply()
+
+                            Toast.makeText(
+                                context,
+                                "Logged in successfully",
+                                Toast.LENGTH_SHORT)
+                                .show()
+                        }
+                        else {
+                            Toast.makeText(
+                                context,
+                                "Invalid credentials",
+                                Toast.LENGTH_SHORT)
+                                .show()
+                        }
+                    },
+                    { error ->
+                        Toast.makeText(
+                            context,
+                            "Error connecting to server",
+                            Toast.LENGTH_SHORT
+                        )
+                            .show()
+                        Log.e("VolleyRequest", error.toString())
+                    })
+                queue.add(getUserRequest)
+
+            }
+//            authViewModel.login(email, password)
         }) {
             Text(text = "Login")
         }
