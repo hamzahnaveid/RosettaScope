@@ -19,6 +19,7 @@ import android.annotation.SuppressLint
 import android.app.AlertDialog
 import android.content.Context
 import android.content.ContextWrapper
+import android.content.DialogInterface
 import android.content.res.Configuration
 import android.media.MediaPlayer
 import android.media.MediaRecorder
@@ -29,6 +30,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Button
+import android.widget.ProgressBar
 import android.widget.TextView
 import android.widget.Toast
 import androidx.camera.core.AspectRatio
@@ -56,6 +58,8 @@ import com.example.rosettascope.viewmodels.GradingViewModel
 import com.example.rosettascope.viewmodels.TranslationViewModel
 import com.google.gson.Gson
 import com.google.mediapipe.tasks.vision.core.RunningMode
+import org.json.JSONArray
+import org.json.JSONObject
 import java.io.File
 import java.io.IOException
 import java.util.concurrent.ExecutorService
@@ -78,7 +82,7 @@ class CameraFragment : Fragment(), ObjectDetectorHelper.DetectorListener {
     private var translatedWord: String = ""
 
     private var mediaPlayer: MediaPlayer? = null
-    private var mediaRecorder: MediaRecorder? = null;
+    private var mediaRecorder: MediaRecorder? = null
 
     private lateinit var objectDetectorHelper: ObjectDetectorHelper
 
@@ -317,7 +321,8 @@ class CameraFragment : Fragment(), ObjectDetectorHelper.DetectorListener {
             hideLoadingDialog()
             currentAudioBase64 = response.pronunciation_audio_base64
             translatedWord = response.translated_word
-            showResultDialog(translatedWord)
+            val originalText = response.original_text
+            showTranslationDialog(translatedWord, originalText)
         }
 
         translationViewModel.errorMessage.observe(viewLifecycleOwner) { error ->
@@ -332,11 +337,8 @@ class CameraFragment : Fragment(), ObjectDetectorHelper.DetectorListener {
 
     private fun observeGradingViewModel() {
         gradingViewModel.gradingResult.observe(viewLifecycleOwner) { response ->
-            AlertDialog.Builder(requireContext())
-                .setTitle("Grading Result")
-                .setMessage(response.result)
-                .setPositiveButton("OK", null)
-                .show()
+            Log.d("GradeResult", response.result)
+            showGradeDialog(response.result)
         }
 
         gradingViewModel.errorMessage.observe(viewLifecycleOwner) { error ->
@@ -361,13 +363,15 @@ class CameraFragment : Fragment(), ObjectDetectorHelper.DetectorListener {
         currentDialog = null
     }
 
-    private fun showResultDialog(translatedWord: String) {
+    private fun showTranslationDialog(translatedWord: String, originalText: String) {
         val view = LayoutInflater.from(requireContext()).inflate(R.layout.dialog_translation, null)
         val tvTranslated: TextView = view.findViewById(R.id.textview_translation)
+        val tvOriginal: TextView = view.findViewById(R.id.textview_originaltext)
         val btnPlay: Button = view.findViewById(R.id.button_play)
         val btnRecord: Button = view.findViewById(R.id.button_record)
 
         tvTranslated.text = translatedWord
+        tvOriginal.text = originalText
 
         val dialog = AlertDialog.Builder(requireContext())
             .setTitle("Translation")
@@ -390,6 +394,113 @@ class CameraFragment : Fragment(), ObjectDetectorHelper.DetectorListener {
         }
 
         dialog.show()
+    }
+
+    private fun showGradeDialog(jsonResult: String) {
+        val view = LayoutInflater.from(requireContext()).inflate(R.layout.dialog_grade, null)
+
+        val tvTranslated: TextView = view.findViewById(R.id.textview_grade_translation)
+        val btnPlay: Button = view.findViewById(R.id.button_grade_play)
+
+        val pbAccuracy: ProgressBar = view.findViewById(R.id.pb_accuracy)
+        val pbFluency: ProgressBar = view.findViewById(R.id.pb_fluency)
+        val pbCompleteness: ProgressBar = view.findViewById(R.id.pb_completeness)
+        val pbPron: ProgressBar = view.findViewById(R.id.pb_pron)
+
+        val tvAccuracyScore: TextView = view.findViewById(R.id.textview_accuracyscore)
+        val tvFluencyScore: TextView = view.findViewById(R.id.textview_fluencyscore)
+        val tvCompletenessScore: TextView = view.findViewById(R.id.textview_completenessscore)
+        val tvPronScore: TextView = view.findViewById(R.id.textview_pronscore)
+
+        val result: JSONObject = JSONObject(jsonResult)
+        val nBest: JSONArray = result.getJSONArray("NBest")
+        val scores: JSONObject = nBest.getJSONObject(0).getJSONObject("PronunciationAssessment")
+
+        val accuracyScore: Int = scores.getDouble("AccuracyScore").toInt()
+        val fluencyScore: Int = scores.getDouble("FluencyScore").toInt()
+        val completenessScore: Int = scores.getDouble("CompletenessScore").toInt()
+        val pronScore: Int = scores.getDouble("PronScore").toInt()
+
+        tvTranslated.text = result.getString("DisplayText")
+        btnPlay.setOnClickListener {
+            currentAudioBase64?.let { playAudioFromBase64(it) }
+        }
+
+        when (accuracyScore) {
+            in 0..50 -> {
+                pbAccuracy.progressDrawable = resources.getDrawable(R.drawable.custom_progress_red)
+            }
+            in 51..75 -> {
+                pbAccuracy.progressDrawable =
+                    resources.getDrawable(R.drawable.custom_progress_yellow)
+            }
+            else -> {
+                pbAccuracy.progressDrawable =
+                    resources.getDrawable(R.drawable.custom_progress_green)
+            }
+        }
+
+        when (fluencyScore) {
+            in 0..50 -> {
+                pbFluency.progressDrawable = resources.getDrawable(R.drawable.custom_progress_red)
+            }
+            in 51..75 -> {
+                pbFluency.progressDrawable =
+                    resources.getDrawable(R.drawable.custom_progress_yellow)
+            }
+            else -> {
+                pbFluency.progressDrawable =
+                    resources.getDrawable(R.drawable.custom_progress_green)
+            }
+        }
+
+        when (completenessScore) {
+            in 0..50 -> {
+                pbCompleteness.progressDrawable = resources.getDrawable(R.drawable.custom_progress_red)
+            }
+            in 51..75 -> {
+                pbCompleteness.progressDrawable =
+                    resources.getDrawable(R.drawable.custom_progress_yellow)
+            }
+            else -> {
+                pbCompleteness.progressDrawable =
+                    resources.getDrawable(R.drawable.custom_progress_green)
+            }
+        }
+
+        when (pronScore) {
+            in 0..50 -> {
+                pbPron.progressDrawable = resources.getDrawable(R.drawable.custom_progress_red)
+            }
+            in 51..75 -> {
+                pbPron.progressDrawable =
+                    resources.getDrawable(R.drawable.custom_progress_yellow)
+            }
+            else -> {
+                pbPron.progressDrawable =
+                    resources.getDrawable(R.drawable.custom_progress_green)
+            }
+        }
+
+        pbAccuracy.setProgress(accuracyScore.toString().toInt(), true)
+        pbFluency.setProgress(fluencyScore.toString().toInt(), true)
+        pbCompleteness.setProgress(completenessScore.toString().toInt(), true)
+        pbPron.setProgress(pronScore.toString().toInt(), true)
+
+        tvAccuracyScore.text = "Accuracy Score: $accuracyScore"
+        tvFluencyScore.text = "Fluency Score: $fluencyScore"
+        tvCompletenessScore.text = "Completeness Score: $completenessScore"
+        tvPronScore.text = "Overall Score: $pronScore"
+
+        val dialog = AlertDialog.Builder(requireContext())
+            .setTitle("Pronunciation Assessment")
+            .setView(view)
+            .setNegativeButton("Close", DialogInterface.OnClickListener() { dialog, _ ->
+                //Save scores to Java DB
+                dialog.dismiss()
+            })
+            .create()
+            .show()
     }
 
     private fun playAudioFromBase64(base64Audio: String) {
@@ -454,7 +565,7 @@ class CameraFragment : Fragment(), ObjectDetectorHelper.DetectorListener {
 
     private fun retrieveUser(email: String) {
         val gson = Gson()
-        val queue = Volley.newRequestQueue(context);
+        val queue = Volley.newRequestQueue(context)
         val url = "https://gaston-distant-unamicably.ngrok-free.dev/user/$email"
 
         val getUserRequest = JsonObjectRequest(

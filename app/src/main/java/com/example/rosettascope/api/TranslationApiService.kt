@@ -1,6 +1,5 @@
 package com.example.rosettascope.api
 
-import com.google.gson.Gson
 import retrofit2.http.Body
 import retrofit2.http.POST
 
@@ -11,6 +10,7 @@ data class TranslationRequest(
 
 data class TranslationResponse(
     val translated_word: String,
+    val original_text: String,
     val pronunciation_audio_base64: String? = null
 )
 
