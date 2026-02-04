@@ -45,13 +45,16 @@ import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
 import androidx.fragment.app.viewModels
 import androidx.navigation.Navigation
+import androidx.recyclerview.widget.RecyclerView
 import com.android.volley.Request
 import com.android.volley.toolbox.JsonObjectRequest
 import com.android.volley.toolbox.Volley
 import com.example.rosettascope.R
+import com.example.rosettascope.adapters.SyllableRecyclerViewAdapter
 import com.example.rosettascope.ar.OverlayView
 import com.example.rosettascope.databinding.FragmentCameraBinding
 import com.example.rosettascope.helpers.ObjectDetectorHelper
+import com.example.rosettascope.models.Syllable
 import com.example.rosettascope.models.User
 import com.example.rosettascope.viewmodels.CameraViewModel
 import com.example.rosettascope.viewmodels.GradingViewModel
@@ -200,11 +203,12 @@ class CameraFragment : Fragment(), ObjectDetectorHelper.DetectorListener {
         fragmentCameraBinding.overlay.setOnBoxTapListener(object : OverlayView.OnBoxTapListener {
             override fun onBoxTapped(word: String) {
                 translationViewModel.translateWord(word, user?.targetLanguage.toString())
-                showLoadingDialog(word)
+                showTranslationLoadingDialog(word)
             }
         })
 
         observeTranslationViewModel()
+        observeGradingViewModel()
     }
     // Initialize CameraX, and prepare to bind the camera use cases
     private fun setUpCamera() {
@@ -337,8 +341,9 @@ class CameraFragment : Fragment(), ObjectDetectorHelper.DetectorListener {
 
     private fun observeGradingViewModel() {
         gradingViewModel.gradingResult.observe(viewLifecycleOwner) { response ->
+            hideLoadingDialog()
             Log.d("GradeResult", response.result)
-            showGradeDialog(response.result)
+            showGradeDialog(response.result, response.feedback)
         }
 
         gradingViewModel.errorMessage.observe(viewLifecycleOwner) { error ->
@@ -350,9 +355,17 @@ class CameraFragment : Fragment(), ObjectDetectorHelper.DetectorListener {
         }
     }
 
-    private fun showLoadingDialog(word: String) {
+    private fun showTranslationLoadingDialog(word: String) {
         val builder = AlertDialog.Builder(requireContext())
         builder.setTitle("Translating \"$word\"...")
+        builder.setCancelable(false)
+        currentDialog = builder.create()
+        currentDialog?.show()
+    }
+
+    private fun showGradeLoadingDialog() {
+        val builder = AlertDialog.Builder(requireContext())
+        builder.setTitle("Grading pronunciation...")
         builder.setCancelable(false)
         currentDialog = builder.create()
         currentDialog?.show()
@@ -396,11 +409,13 @@ class CameraFragment : Fragment(), ObjectDetectorHelper.DetectorListener {
         dialog.show()
     }
 
-    private fun showGradeDialog(jsonResult: String) {
+    private fun showGradeDialog(jsonResult: String, feedback: String) {
         val view = LayoutInflater.from(requireContext()).inflate(R.layout.dialog_grade, null)
 
         val tvTranslated: TextView = view.findViewById(R.id.textview_grade_translation)
         val btnPlay: Button = view.findViewById(R.id.button_grade_play)
+
+        val tvFeedback: TextView = view.findViewById(R.id.textview_feedback)
 
         val pbAccuracy: ProgressBar = view.findViewById(R.id.pb_accuracy)
         val pbFluency: ProgressBar = view.findViewById(R.id.pb_fluency)
@@ -412,9 +427,15 @@ class CameraFragment : Fragment(), ObjectDetectorHelper.DetectorListener {
         val tvCompletenessScore: TextView = view.findViewById(R.id.textview_completenessscore)
         val tvPronScore: TextView = view.findViewById(R.id.textview_pronscore)
 
+        val rvSyllables: RecyclerView = view.findViewById(R.id.rv_syllables)
+
         val result: JSONObject = JSONObject(jsonResult)
         val nBest: JSONArray = result.getJSONArray("NBest")
         val scores: JSONObject = nBest.getJSONObject(0).getJSONObject("PronunciationAssessment")
+
+        val words: JSONArray = nBest.getJSONObject(0).getJSONArray("Words")
+        val syllables: List<Syllable> = populateSyllablesList(words)
+        rvSyllables.adapter = SyllableRecyclerViewAdapter(syllables)
 
         val accuracyScore: Int = scores.getDouble("AccuracyScore").toInt()
         val fluencyScore: Int = scores.getDouble("FluencyScore").toInt()
@@ -426,11 +447,13 @@ class CameraFragment : Fragment(), ObjectDetectorHelper.DetectorListener {
             currentAudioBase64?.let { playAudioFromBase64(it) }
         }
 
+        tvFeedback.text = feedback
+
         when (accuracyScore) {
             in 0..50 -> {
                 pbAccuracy.progressDrawable = resources.getDrawable(R.drawable.custom_progress_red)
             }
-            in 51..75 -> {
+            in 51..89 -> {
                 pbAccuracy.progressDrawable =
                     resources.getDrawable(R.drawable.custom_progress_yellow)
             }
@@ -444,7 +467,7 @@ class CameraFragment : Fragment(), ObjectDetectorHelper.DetectorListener {
             in 0..50 -> {
                 pbFluency.progressDrawable = resources.getDrawable(R.drawable.custom_progress_red)
             }
-            in 51..75 -> {
+            in 51..89 -> {
                 pbFluency.progressDrawable =
                     resources.getDrawable(R.drawable.custom_progress_yellow)
             }
@@ -458,7 +481,7 @@ class CameraFragment : Fragment(), ObjectDetectorHelper.DetectorListener {
             in 0..50 -> {
                 pbCompleteness.progressDrawable = resources.getDrawable(R.drawable.custom_progress_red)
             }
-            in 51..75 -> {
+            in 51..89 -> {
                 pbCompleteness.progressDrawable =
                     resources.getDrawable(R.drawable.custom_progress_yellow)
             }
@@ -472,7 +495,7 @@ class CameraFragment : Fragment(), ObjectDetectorHelper.DetectorListener {
             in 0..50 -> {
                 pbPron.progressDrawable = resources.getDrawable(R.drawable.custom_progress_red)
             }
-            in 51..75 -> {
+            in 51..89 -> {
                 pbPron.progressDrawable =
                     resources.getDrawable(R.drawable.custom_progress_yellow)
             }
@@ -503,6 +526,25 @@ class CameraFragment : Fragment(), ObjectDetectorHelper.DetectorListener {
             .show()
     }
 
+    private fun populateSyllablesList(words: JSONArray) : List<Syllable> {
+        val syllables = mutableListOf<Syllable>()
+
+        for (i in 0 until words.length()) {
+            val word = words.getJSONObject(i)
+            val syllablesArray = word.getJSONArray("Syllables")
+
+            for (j in 0 until syllablesArray.length()) {
+                val syllable = syllablesArray.getJSONObject(j)
+                val grapheme = syllable.getString("Grapheme")
+                val accuracyScore =
+                    syllable.getJSONObject("PronunciationAssessment").getDouble("AccuracyScore")
+                        .toInt()
+                syllables.add(Syllable(grapheme, accuracyScore))
+            }
+        }
+        return syllables
+    }
+
     private fun playAudioFromBase64(base64Audio: String) {
         val audioBytes = android.util.Base64.decode(base64Audio, android.util.Base64.DEFAULT)
         val tempFile = createTempFile(suffix = ".mp3").toFile()
@@ -530,6 +572,8 @@ class CameraFragment : Fragment(), ObjectDetectorHelper.DetectorListener {
 
             try {
                 prepare()
+                Log.d("MediaRecorder", "Recording started")
+
             } catch (e: IOException) {
                 Log.e("MediaRecorder", "prepare() failed")
             }
@@ -549,10 +593,10 @@ class CameraFragment : Fragment(), ObjectDetectorHelper.DetectorListener {
         val dir = contextWrapper.getExternalFilesDir(Environment.DIRECTORY_MUSIC)
         val file = File(dir, "recording.mp3")
         val bytes = file.readBytes()
-        //Log.d("WAV Bytes", bytes.copyOfRange(0, 12).joinToString(" "))
+        Log.d("MediaRecorder", "Recording saved to ${file.absolutePath}")
         val bytesString = android.util.Base64.encodeToString(bytes, android.util.Base64.NO_WRAP)
         gradingViewModel.gradeSpeech(translatedWord, user?.targetLanguage.toString(), bytesString)
-        observeGradingViewModel()
+        showGradeLoadingDialog()
     }
 
     //creating mp3 file for demo purposes

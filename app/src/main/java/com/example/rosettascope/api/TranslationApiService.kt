@@ -21,7 +21,8 @@ data class GradingRequest(
 )
 
 data class GradingResponse(
-    val result: String
+    val result: String,
+    val feedback: String
 )
 
 interface TranslationApiService {
