@@ -36,8 +36,9 @@ import com.example.rosettascope.viewmodels.AuthViewModel
 import com.google.gson.Gson
 import org.json.JSONObject
 
-var targetLanguage = "Mandarin Chinese"
-    var proficiency  = "Beginner"
+var targetLanguage = "German"
+var proficiency  = "Beginner"
+
 @Composable
 fun SignupScreen(modifier: Modifier = Modifier, navController: NavController, authViewModel: AuthViewModel) {
 
@@ -113,13 +114,21 @@ fun SignupScreen(modifier: Modifier = Modifier, navController: NavController, au
             }
             else {
                 when (targetLanguage) {
-                    "Mandarin Chinese" -> targetLanguage = "zh-CN"
                     "German" -> targetLanguage = "de-DE"
                     "French" -> targetLanguage = "fr-FR"
                     "Spanish" -> targetLanguage = "es-ES"
+                    "Vietnamese" -> targetLanguage = "vi-VN"
+                    "Mandarin Chinese" -> targetLanguage = "zh-CN"
+                    "Arabic" -> targetLanguage = "ar-SA"
+                    "Hindi" -> targetLanguage = "hi-IN"
                     "Korean" -> targetLanguage = "ko-KR"
                     "Japanese" -> targetLanguage = "ja-JP"
                     "Russian" -> targetLanguage = "ru-RU"
+                    "Swedish" -> targetLanguage = "sv-SE"
+                    "Finnish" -> targetLanguage = "fi-FI"
+                    "Polish" -> targetLanguage = "pl-PL"
+                    "Italian" -> targetLanguage = "it-IT"
+                    "Dutch" -> targetLanguage = "nl-NL"
                 }
 
                 val gson = Gson()
@@ -179,7 +188,7 @@ fun SignupScreen(modifier: Modifier = Modifier, navController: NavController, au
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DisplayLangSpinner() {
-    val parentOptions = listOf("Mandarin Chinese","German","French","Spanish","Korean","Japanese","Russian")
+    val parentOptions = listOf("German","French","Spanish","Vietnamese","Mandarin Chinese","Arabic","Hindi","Korean","Japanese","Russian","Swedish","Finnish","Polish","Italian","Dutch",)
     var expandedState by remember { mutableStateOf(false) }
     var selectedOption by remember { mutableStateOf(parentOptions[0]) }
 
