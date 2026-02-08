@@ -17,7 +17,9 @@ package com.example.rosettascope.fragments
 
 import android.annotation.SuppressLint
 import android.app.AlertDialog
+import android.content.Context
 import android.content.ContextWrapper
+import android.content.DialogInterface
 import android.content.res.Configuration
 import android.media.MediaPlayer
 import android.media.MediaRecorder
@@ -28,6 +30,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Button
+import android.widget.ProgressBar
 import android.widget.TextView
 import android.widget.Toast
 import androidx.camera.core.AspectRatio
@@ -37,24 +40,36 @@ import androidx.camera.core.ImageAnalysis
 import androidx.camera.core.ImageAnalysis.OUTPUT_IMAGE_FORMAT_RGBA_8888
 import androidx.camera.core.Preview
 import androidx.camera.lifecycle.ProcessCameraProvider
-import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
 import androidx.fragment.app.viewModels
 import androidx.navigation.Navigation
+import androidx.recyclerview.widget.RecyclerView
+import com.android.volley.Request
+import com.android.volley.toolbox.JsonObjectRequest
+import com.android.volley.toolbox.Volley
 import com.example.rosettascope.R
+import com.example.rosettascope.adapters.ScoreRecyclerViewAdapter
 import com.example.rosettascope.ar.OverlayView
 import com.example.rosettascope.databinding.FragmentCameraBinding
 import com.example.rosettascope.helpers.ObjectDetectorHelper
+import com.example.rosettascope.models.Score
+import com.example.rosettascope.models.User
 import com.example.rosettascope.viewmodels.CameraViewModel
+import com.example.rosettascope.viewmodels.GradingViewModel
 import com.example.rosettascope.viewmodels.TranslationViewModel
+import com.google.gson.Gson
 import com.google.mediapipe.tasks.vision.core.RunningMode
+import org.json.JSONArray
+import org.json.JSONException
+import org.json.JSONObject
 import java.io.File
 import java.io.IOException
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
+import kotlin.io.path.createTempFile
 
 class CameraFragment : Fragment(), ObjectDetectorHelper.DetectorListener {
 
@@ -65,16 +80,23 @@ class CameraFragment : Fragment(), ObjectDetectorHelper.DetectorListener {
     private val fragmentCameraBinding
         get() = _fragmentCameraBinding!!
 
+    private var fullTranslation: String = ""
     private var currentDialog: AlertDialog? = null
+
     private var currentAudioBase64: String? = null
+    private var translatedWord: String = ""
 
     private var mediaPlayer: MediaPlayer? = null
-    private var mediaRecorder: MediaRecorder? = null;
+    private var mediaRecorder: MediaRecorder? = null
 
     private lateinit var objectDetectorHelper: ObjectDetectorHelper
 
     private val viewModel: CameraViewModel by activityViewModels()
     private val translationViewModel: TranslationViewModel by viewModels()
+    private val gradingViewModel: GradingViewModel by viewModels()
+
+    private var user: User? = null
+
     private var preview: Preview? = null
 
     private var imageAnalyzer: ImageAnalysis? = null
@@ -91,7 +113,7 @@ class CameraFragment : Fragment(), ObjectDetectorHelper.DetectorListener {
         if (!PermissionsFragment.hasPermissions(requireContext())) {
             Navigation.findNavController(
                 requireActivity(),
-                com.example.rosettascope.R.id.fragment_container
+                R.id.fragment_container
             )
                 .navigate(CameraFragmentDirections.actionCameraToPermissions())
         }
@@ -151,6 +173,10 @@ class CameraFragment : Fragment(), ObjectDetectorHelper.DetectorListener {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
+        val email = context?.getSharedPreferences("USER", Context.MODE_PRIVATE)
+            ?.getString("email", "").toString()
+        retrieveUser(email)
+
         // Initialize our background executor
         backgroundExecutor = Executors.newSingleThreadExecutor()
 
@@ -178,12 +204,13 @@ class CameraFragment : Fragment(), ObjectDetectorHelper.DetectorListener {
         fragmentCameraBinding.overlay.setRunningMode(RunningMode.LIVE_STREAM)
         fragmentCameraBinding.overlay.setOnBoxTapListener(object : OverlayView.OnBoxTapListener {
             override fun onBoxTapped(word: String) {
-                translationViewModel.translateWord(word, "es")
-                showLoadingDialog(word)
+                translationViewModel.translateWord(word, user?.targetLanguage.toString())
+                showTranslationLoadingDialog(word)
             }
         })
 
-        observeViewModel()
+        observeTranslationViewModel()
+        observeGradingViewModel()
     }
     // Initialize CameraX, and prepare to bind the camera use cases
     private fun setUpCamera() {
@@ -295,11 +322,14 @@ class CameraFragment : Fragment(), ObjectDetectorHelper.DetectorListener {
         }
     }
 
-    private fun observeViewModel() {
+    private fun observeTranslationViewModel() {
         translationViewModel.translationResult.observe(viewLifecycleOwner) { response ->
             hideLoadingDialog()
             currentAudioBase64 = response.pronunciation_audio_base64
-            showResultDialog(response.translated_word)
+            translatedWord = response.translated_word
+            fullTranslation = response.translation
+            val originalText = response.original_text
+            showTranslationDialog(fullTranslation, originalText)
         }
 
         translationViewModel.errorMessage.observe(viewLifecycleOwner) { error ->
@@ -312,9 +342,33 @@ class CameraFragment : Fragment(), ObjectDetectorHelper.DetectorListener {
         }
     }
 
-    private fun showLoadingDialog(word: String) {
+    private fun observeGradingViewModel() {
+        gradingViewModel.gradingResult.observe(viewLifecycleOwner) { response ->
+            hideLoadingDialog()
+            Log.d("GradeResult", response.result)
+            showGradeDialog(response.result, response.feedback)
+        }
+
+        gradingViewModel.errorMessage.observe(viewLifecycleOwner) { error ->
+            AlertDialog.Builder(requireContext())
+                .setTitle("Error")
+                .setMessage(error ?: "Unknown error")
+                .setPositiveButton("OK", null)
+                .show()
+        }
+    }
+
+    private fun showTranslationLoadingDialog(word: String) {
         val builder = AlertDialog.Builder(requireContext())
         builder.setTitle("Translating \"$word\"...")
+        builder.setCancelable(false)
+        currentDialog = builder.create()
+        currentDialog?.show()
+    }
+
+    private fun showGradeLoadingDialog() {
+        val builder = AlertDialog.Builder(requireContext())
+        builder.setTitle("Grading pronunciation...")
         builder.setCancelable(false)
         currentDialog = builder.create()
         currentDialog?.show()
@@ -325,13 +379,15 @@ class CameraFragment : Fragment(), ObjectDetectorHelper.DetectorListener {
         currentDialog = null
     }
 
-    private fun showResultDialog(translatedWord: String) {
+    private fun showTranslationDialog(translation: String, originalText: String) {
         val view = LayoutInflater.from(requireContext()).inflate(R.layout.dialog_translation, null)
         val tvTranslated: TextView = view.findViewById(R.id.textview_translation)
+        val tvOriginal: TextView = view.findViewById(R.id.textview_originaltext)
         val btnPlay: Button = view.findViewById(R.id.button_play)
         val btnRecord: Button = view.findViewById(R.id.button_record)
 
-        tvTranslated.text = translatedWord
+        tvTranslated.text = fullTranslation
+        tvOriginal.text = originalText
 
         val dialog = AlertDialog.Builder(requireContext())
             .setTitle("Translation")
@@ -356,9 +412,162 @@ class CameraFragment : Fragment(), ObjectDetectorHelper.DetectorListener {
         dialog.show()
     }
 
+    private fun showGradeDialog(jsonResult: String, feedback: String) {
+        val view = LayoutInflater.from(requireContext()).inflate(R.layout.dialog_grade, null)
+
+        val tvTranslated: TextView = view.findViewById(R.id.textview_grade_translation)
+        val btnPlay: Button = view.findViewById(R.id.button_grade_play)
+
+        val tvFeedback: TextView = view.findViewById(R.id.textview_feedback)
+
+        val pbAccuracy: ProgressBar = view.findViewById(R.id.pb_accuracy)
+        val pbFluency: ProgressBar = view.findViewById(R.id.pb_fluency)
+        val pbCompleteness: ProgressBar = view.findViewById(R.id.pb_completeness)
+        val pbPron: ProgressBar = view.findViewById(R.id.pb_pron)
+
+        val tvAccuracyScore: TextView = view.findViewById(R.id.textview_accuracyscore)
+        val tvFluencyScore: TextView = view.findViewById(R.id.textview_fluencyscore)
+        val tvCompletenessScore: TextView = view.findViewById(R.id.textview_completenessscore)
+        val tvPronScore: TextView = view.findViewById(R.id.textview_pronscore)
+
+        val rvSyllables: RecyclerView = view.findViewById(R.id.rv_scores)
+
+        val result: JSONObject = JSONObject(jsonResult)
+        val nBest: JSONArray = result.getJSONArray("NBest")
+        val scores: JSONObject = nBest.getJSONObject(0).getJSONObject("PronunciationAssessment")
+
+        val words: JSONArray = nBest.getJSONObject(0).getJSONArray("Words")
+        val scoreList: List<Score> = populateScoreList(words)
+//        val syllables: List<Syllable> = populateSyllablesList(words)
+        rvSyllables.adapter = ScoreRecyclerViewAdapter(scoreList)
+
+        val accuracyScore: Int = scores.getDouble("AccuracyScore").toInt()
+        val fluencyScore: Int = scores.getDouble("FluencyScore").toInt()
+        val completenessScore: Int = scores.getDouble("CompletenessScore").toInt()
+        val pronScore: Int = scores.getDouble("PronScore").toInt()
+
+        tvTranslated.text = result.getString("DisplayText")
+        btnPlay.setOnClickListener {
+            currentAudioBase64?.let { playAudioFromBase64(it) }
+        }
+
+        tvFeedback.text = feedback
+
+        when (accuracyScore) {
+            in 0..50 -> {
+                pbAccuracy.progressDrawable = resources.getDrawable(R.drawable.custom_progress_red)
+            }
+            in 51..89 -> {
+                pbAccuracy.progressDrawable =
+                    resources.getDrawable(R.drawable.custom_progress_yellow)
+            }
+            else -> {
+                pbAccuracy.progressDrawable =
+                    resources.getDrawable(R.drawable.custom_progress_green)
+            }
+        }
+
+        when (fluencyScore) {
+            in 0..50 -> {
+                pbFluency.progressDrawable = resources.getDrawable(R.drawable.custom_progress_red)
+            }
+            in 51..89 -> {
+                pbFluency.progressDrawable =
+                    resources.getDrawable(R.drawable.custom_progress_yellow)
+            }
+            else -> {
+                pbFluency.progressDrawable =
+                    resources.getDrawable(R.drawable.custom_progress_green)
+            }
+        }
+
+        when (completenessScore) {
+            in 0..50 -> {
+                pbCompleteness.progressDrawable = resources.getDrawable(R.drawable.custom_progress_red)
+            }
+            in 51..89 -> {
+                pbCompleteness.progressDrawable =
+                    resources.getDrawable(R.drawable.custom_progress_yellow)
+            }
+            else -> {
+                pbCompleteness.progressDrawable =
+                    resources.getDrawable(R.drawable.custom_progress_green)
+            }
+        }
+
+        when (pronScore) {
+            in 0..50 -> {
+                pbPron.progressDrawable = resources.getDrawable(R.drawable.custom_progress_red)
+            }
+            in 51..89 -> {
+                pbPron.progressDrawable =
+                    resources.getDrawable(R.drawable.custom_progress_yellow)
+            }
+            else -> {
+                pbPron.progressDrawable =
+                    resources.getDrawable(R.drawable.custom_progress_green)
+            }
+        }
+
+        pbAccuracy.setProgress(accuracyScore.toString().toInt(), true)
+        pbFluency.setProgress(fluencyScore.toString().toInt(), true)
+        pbCompleteness.setProgress(completenessScore.toString().toInt(), true)
+        pbPron.setProgress(pronScore.toString().toInt(), true)
+
+        tvAccuracyScore.text = "Accuracy Score: $accuracyScore"
+        tvFluencyScore.text = "Fluency Score: $fluencyScore"
+        tvCompletenessScore.text = "Completeness Score: $completenessScore"
+        tvPronScore.text = "Overall Score: $pronScore"
+
+        val dialog = AlertDialog.Builder(requireContext())
+            .setTitle("Pronunciation Assessment")
+            .setView(view)
+            .setNegativeButton("Continue", DialogInterface.OnClickListener() { dialog, _ ->
+                saveScoreToDB(fullTranslation, pronScore)
+                dialog.dismiss()
+            })
+            .create()
+            .show()
+    }
+
+    private fun populateScoreList(words: JSONArray) : List<Score> {
+        val scores = mutableListOf<Score>()
+
+        for (i in 0 until words.length()) {
+            val wordObject = words.getJSONObject(i)
+            val word = wordObject.getString("Word")
+            var score = try {
+                wordObject.getJSONObject("PronunciationAssessment").getDouble("AccuracyScore").toInt()
+            } catch (e: JSONException) {
+                0
+            }
+            scores.add(Score(null, word, user!!.targetLanguage, score))
+        }
+        return scores
+    }
+
+//    private fun populateSyllablesList(words: JSONArray) : List<Syllable> {
+//        val syllables = mutableListOf<Syllable>()
+//
+//        for (i in 0 until words.length()) {
+//            val word = words.getJSONObject(i)
+//            val syllablesArray = word.getJSONArray("Syllables")
+//
+//            for (j in 0 until syllablesArray.length()) {
+//                val syllable = syllablesArray.getJSONObject(j)
+//                val grapheme = syllable.getString("Grapheme")
+//                val accuracyScore =
+//                    syllable.getJSONObject("PronunciationAssessment").getDouble("AccuracyScore")
+//                        .toInt()
+//                syllables.add(Syllable(grapheme, accuracyScore))
+//            }
+//        }
+//        return syllables
+//    }
+
     private fun playAudioFromBase64(base64Audio: String) {
         val audioBytes = android.util.Base64.decode(base64Audio, android.util.Base64.DEFAULT)
-        val tempFile = kotlin.io.path.createTempFile(suffix = ".mp3").toFile()
+        val tempFile = createTempFile(suffix = ".mp3").toFile()
         tempFile.writeBytes(audioBytes)
 
         mediaPlayer?.release()
@@ -383,6 +592,8 @@ class CameraFragment : Fragment(), ObjectDetectorHelper.DetectorListener {
 
             try {
                 prepare()
+                Log.d("MediaRecorder", "Recording started")
+
             } catch (e: IOException) {
                 Log.e("MediaRecorder", "prepare() failed")
             }
@@ -397,13 +608,84 @@ class CameraFragment : Fragment(), ObjectDetectorHelper.DetectorListener {
             release()
         }
         mediaRecorder = null
+
+        val contextWrapper = ContextWrapper(requireContext())
+        val dir = contextWrapper.getExternalFilesDir(Environment.DIRECTORY_MUSIC)
+        val file = File(dir, "recording.mp3")
+        val bytes = file.readBytes()
+        Log.d("MediaRecorder", "Recording saved to ${file.absolutePath}")
+        val bytesString = android.util.Base64.encodeToString(bytes, android.util.Base64.NO_WRAP)
+        gradingViewModel.gradeSpeech(fullTranslation, user?.targetLanguage.toString(), bytesString)
+        showGradeLoadingDialog()
     }
 
     //creating mp3 file for demo purposes
     private fun getRecordingFilePath(): String {
         val contextWrapper = ContextWrapper(requireContext())
         val dir = contextWrapper.getExternalFilesDir(Environment.DIRECTORY_MUSIC)
-        val file = File(dir, "recording.mp3")
-        return file.absolutePath
+        val mp3File = File(dir, "recording.mp3")
+        return mp3File.absolutePath
+    }
+
+    private fun retrieveUser(email: String) {
+        val gson = Gson()
+        val queue = Volley.newRequestQueue(context)
+        val url = "https://gaston-distant-unamicably.ngrok-free.dev/user/$email"
+
+        val getUserRequest = JsonObjectRequest(
+            Request.Method.GET, url, null,
+            { response ->
+                val json = response.toString()
+                user = gson.fromJson(json, User::class.java)
+                Log.d("JavaDB", "User retrieved")
+            },
+            { error ->
+                Toast.makeText(
+                    context,
+                    "Error connecting to server",
+                    Toast.LENGTH_SHORT
+                )
+                    .show()
+                Log.e("VolleyRequest", error.toString())
+            })
+        queue.add(getUserRequest)
+    }
+
+    private fun saveScoreToDB(word: String, score: Int) {
+        val gson = Gson()
+        val queue = Volley.newRequestQueue(context);
+        val url = "https://gaston-distant-unamicably.ngrok-free.dev/user-save"
+
+        val userScore = Score(null, word, user!!.targetLanguage, score)
+         user!!.scores.add(userScore)
+
+        if (!user!!.confidenceScores.contains(translatedWord)) {
+            user!!.wordsEncountered += 1
+        }
+        user!!.confidenceScores.put(translatedWord, score)
+
+        val userJsonBody = gson.toJson(user)
+
+        val saveUserRequest = JsonObjectRequest(
+            Request.Method.POST, url, JSONObject(userJsonBody),
+            { response ->
+                Toast.makeText(
+                    context,
+                    "Progress saved",
+                    Toast.LENGTH_SHORT
+                )
+                    .show()
+                Log.d("JavaDB", "User saved")
+            }, {
+                error ->
+                Toast.makeText(
+                    context,
+                    "Error connecting to server",
+                    Toast.LENGTH_SHORT
+                )
+                    .show()
+                Log.e("VolleyRequest", error.toString())
+            })
+        queue.add(saveUserRequest)
     }
 }
