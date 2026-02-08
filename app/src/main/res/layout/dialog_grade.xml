@@ -164,17 +164,17 @@
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Syllable Review"
+            android:text="Score Review"
             android:padding="8dp"
             android:textSize="24sp"
             android:textStyle="bold" />
 
         <androidx.recyclerview.widget.RecyclerView
-            android:id="@+id/rv_syllables"
+            android:id="@+id/rv_scores"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"
-            tools:listitem="@layout/recycler_view_syllable_item" />
+            tools:listitem="@layout/recycler_view_score_item" />
 
     </LinearLayout>
 </ScrollView>

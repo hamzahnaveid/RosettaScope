@@ -50,11 +50,11 @@ import com.android.volley.Request
 import com.android.volley.toolbox.JsonObjectRequest
 import com.android.volley.toolbox.Volley
 import com.example.rosettascope.R
-import com.example.rosettascope.adapters.SyllableRecyclerViewAdapter
+import com.example.rosettascope.adapters.ScoreRecyclerViewAdapter
 import com.example.rosettascope.ar.OverlayView
 import com.example.rosettascope.databinding.FragmentCameraBinding
 import com.example.rosettascope.helpers.ObjectDetectorHelper
-import com.example.rosettascope.models.Syllable
+import com.example.rosettascope.models.Score
 import com.example.rosettascope.models.User
 import com.example.rosettascope.viewmodels.CameraViewModel
 import com.example.rosettascope.viewmodels.GradingViewModel
@@ -62,6 +62,7 @@ import com.example.rosettascope.viewmodels.TranslationViewModel
 import com.google.gson.Gson
 import com.google.mediapipe.tasks.vision.core.RunningMode
 import org.json.JSONArray
+import org.json.JSONException
 import org.json.JSONObject
 import java.io.File
 import java.io.IOException
@@ -79,6 +80,7 @@ class CameraFragment : Fragment(), ObjectDetectorHelper.DetectorListener {
     private val fragmentCameraBinding
         get() = _fragmentCameraBinding!!
 
+    private var fullTranslation: String = ""
     private var currentDialog: AlertDialog? = null
 
     private var currentAudioBase64: String? = null
@@ -325,8 +327,9 @@ class CameraFragment : Fragment(), ObjectDetectorHelper.DetectorListener {
             hideLoadingDialog()
             currentAudioBase64 = response.pronunciation_audio_base64
             translatedWord = response.translated_word
+            fullTranslation = response.translation
             val originalText = response.original_text
-            showTranslationDialog(translatedWord, originalText)
+            showTranslationDialog(fullTranslation, originalText)
         }
 
         translationViewModel.errorMessage.observe(viewLifecycleOwner) { error ->
@@ -376,14 +379,14 @@ class CameraFragment : Fragment(), ObjectDetectorHelper.DetectorListener {
         currentDialog = null
     }
 
-    private fun showTranslationDialog(translatedWord: String, originalText: String) {
+    private fun showTranslationDialog(translation: String, originalText: String) {
         val view = LayoutInflater.from(requireContext()).inflate(R.layout.dialog_translation, null)
         val tvTranslated: TextView = view.findViewById(R.id.textview_translation)
         val tvOriginal: TextView = view.findViewById(R.id.textview_originaltext)
         val btnPlay: Button = view.findViewById(R.id.button_play)
         val btnRecord: Button = view.findViewById(R.id.button_record)
 
-        tvTranslated.text = translatedWord
+        tvTranslated.text = fullTranslation
         tvOriginal.text = originalText
 
         val dialog = AlertDialog.Builder(requireContext())
@@ -427,15 +430,16 @@ class CameraFragment : Fragment(), ObjectDetectorHelper.DetectorListener {
         val tvCompletenessScore: TextView = view.findViewById(R.id.textview_completenessscore)
         val tvPronScore: TextView = view.findViewById(R.id.textview_pronscore)
 
-        val rvSyllables: RecyclerView = view.findViewById(R.id.rv_syllables)
+        val rvSyllables: RecyclerView = view.findViewById(R.id.rv_scores)
 
         val result: JSONObject = JSONObject(jsonResult)
         val nBest: JSONArray = result.getJSONArray("NBest")
         val scores: JSONObject = nBest.getJSONObject(0).getJSONObject("PronunciationAssessment")
 
         val words: JSONArray = nBest.getJSONObject(0).getJSONArray("Words")
-        val syllables: List<Syllable> = populateSyllablesList(words)
-        rvSyllables.adapter = SyllableRecyclerViewAdapter(syllables)
+        val scoreList: List<Score> = populateScoreList(words)
+//        val syllables: List<Syllable> = populateSyllablesList(words)
+        rvSyllables.adapter = ScoreRecyclerViewAdapter(scoreList)
 
         val accuracyScore: Int = scores.getDouble("AccuracyScore").toInt()
         val fluencyScore: Int = scores.getDouble("FluencyScore").toInt()
@@ -518,32 +522,48 @@ class CameraFragment : Fragment(), ObjectDetectorHelper.DetectorListener {
         val dialog = AlertDialog.Builder(requireContext())
             .setTitle("Pronunciation Assessment")
             .setView(view)
-            .setNegativeButton("Close", DialogInterface.OnClickListener() { dialog, _ ->
-                //Save scores to Java DB
+            .setNegativeButton("Continue", DialogInterface.OnClickListener() { dialog, _ ->
+                saveScoreToDB(fullTranslation, pronScore)
                 dialog.dismiss()
             })
             .create()
             .show()
     }
 
-    private fun populateSyllablesList(words: JSONArray) : List<Syllable> {
-        val syllables = mutableListOf<Syllable>()
+    private fun populateScoreList(words: JSONArray) : List<Score> {
+        val scores = mutableListOf<Score>()
 
         for (i in 0 until words.length()) {
-            val word = words.getJSONObject(i)
-            val syllablesArray = word.getJSONArray("Syllables")
-
-            for (j in 0 until syllablesArray.length()) {
-                val syllable = syllablesArray.getJSONObject(j)
-                val grapheme = syllable.getString("Grapheme")
-                val accuracyScore =
-                    syllable.getJSONObject("PronunciationAssessment").getDouble("AccuracyScore")
-                        .toInt()
-                syllables.add(Syllable(grapheme, accuracyScore))
+            val wordObject = words.getJSONObject(i)
+            val word = wordObject.getString("Word")
+            var score = try {
+                wordObject.getJSONObject("PronunciationAssessment").getDouble("AccuracyScore").toInt()
+            } catch (e: JSONException) {
+                0
             }
+            scores.add(Score(null, word, user!!.targetLanguage, score))
         }
-        return syllables
+        return scores
     }
+
+//    private fun populateSyllablesList(words: JSONArray) : List<Syllable> {
+//        val syllables = mutableListOf<Syllable>()
+//
+//        for (i in 0 until words.length()) {
+//            val word = words.getJSONObject(i)
+//            val syllablesArray = word.getJSONArray("Syllables")
+//
+//            for (j in 0 until syllablesArray.length()) {
+//                val syllable = syllablesArray.getJSONObject(j)
+//                val grapheme = syllable.getString("Grapheme")
+//                val accuracyScore =
+//                    syllable.getJSONObject("PronunciationAssessment").getDouble("AccuracyScore")
+//                        .toInt()
+//                syllables.add(Syllable(grapheme, accuracyScore))
+//            }
+//        }
+//        return syllables
+//    }
 
     private fun playAudioFromBase64(base64Audio: String) {
         val audioBytes = android.util.Base64.decode(base64Audio, android.util.Base64.DEFAULT)
@@ -595,7 +615,7 @@ class CameraFragment : Fragment(), ObjectDetectorHelper.DetectorListener {
         val bytes = file.readBytes()
         Log.d("MediaRecorder", "Recording saved to ${file.absolutePath}")
         val bytesString = android.util.Base64.encodeToString(bytes, android.util.Base64.NO_WRAP)
-        gradingViewModel.gradeSpeech(translatedWord, user?.targetLanguage.toString(), bytesString)
+        gradingViewModel.gradeSpeech(fullTranslation, user?.targetLanguage.toString(), bytesString)
         showGradeLoadingDialog()
     }
 
@@ -629,5 +649,43 @@ class CameraFragment : Fragment(), ObjectDetectorHelper.DetectorListener {
                 Log.e("VolleyRequest", error.toString())
             })
         queue.add(getUserRequest)
+    }
+
+    private fun saveScoreToDB(word: String, score: Int) {
+        val gson = Gson()
+        val queue = Volley.newRequestQueue(context);
+        val url = "https://gaston-distant-unamicably.ngrok-free.dev/user-save"
+
+        val userScore = Score(null, word, user!!.targetLanguage, score)
+         user!!.scores.add(userScore)
+
+        if (!user!!.confidenceScores.contains(translatedWord)) {
+            user!!.wordsEncountered += 1
+        }
+        user!!.confidenceScores.put(translatedWord, score)
+
+        val userJsonBody = gson.toJson(user)
+
+        val saveUserRequest = JsonObjectRequest(
+            Request.Method.POST, url, JSONObject(userJsonBody),
+            { response ->
+                Toast.makeText(
+                    context,
+                    "Progress saved",
+                    Toast.LENGTH_SHORT
+                )
+                    .show()
+                Log.d("JavaDB", "User saved")
+            }, {
+                error ->
+                Toast.makeText(
+                    context,
+                    "Error connecting to server",
+                    Toast.LENGTH_SHORT
+                )
+                    .show()
+                Log.e("VolleyRequest", error.toString())
+            })
+        queue.add(saveUserRequest)
     }
 }

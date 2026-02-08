@@ -9,6 +9,7 @@ data class TranslationRequest(
 )
 
 data class TranslationResponse(
+    val translation: String,
     val translated_word: String,
     val original_text: String,
     val pronunciation_audio_base64: String? = null

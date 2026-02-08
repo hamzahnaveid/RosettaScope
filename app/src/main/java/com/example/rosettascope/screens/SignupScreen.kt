@@ -31,10 +31,12 @@ import androidx.navigation.NavController
 import com.android.volley.Request
 import com.android.volley.toolbox.JsonObjectRequest
 import com.android.volley.toolbox.Volley
+import com.example.rosettascope.models.User
 import com.example.rosettascope.viewmodels.AuthViewModel
+import com.google.gson.Gson
 import org.json.JSONObject
 
-var targetLanguage = "English"
+var targetLanguage = "Mandarin Chinese"
     var proficiency  = "Beginner"
 @Composable
 fun SignupScreen(modifier: Modifier = Modifier, navController: NavController, authViewModel: AuthViewModel) {
@@ -111,7 +113,6 @@ fun SignupScreen(modifier: Modifier = Modifier, navController: NavController, au
             }
             else {
                 when (targetLanguage) {
-                    "English" -> targetLanguage = "en-US"
                     "Mandarin Chinese" -> targetLanguage = "zh-CN"
                     "German" -> targetLanguage = "de-DE"
                     "French" -> targetLanguage = "fr-FR"
@@ -121,18 +122,14 @@ fun SignupScreen(modifier: Modifier = Modifier, navController: NavController, au
                     "Russian" -> targetLanguage = "ru-RU"
                 }
 
+                val gson = Gson()
                 val queue = Volley.newRequestQueue(context);
                 val url = "https://gaston-distant-unamicably.ngrok-free.dev/signup"
 
-                val userJsonBody = JSONObject()
-                userJsonBody.put("email", email)
-                userJsonBody.put("password", password)
-                userJsonBody.put("proficiency", proficiency)
-                userJsonBody.put("targetLanguage", targetLanguage)
-                userJsonBody.put("wordsEncountered", 0)
-                userJsonBody.put("wordsMastered", 0)
+                val user = User(email, password, proficiency, targetLanguage, 0, 0, ArrayList(), mutableMapOf())
+                val userJsonBody = gson.toJson(user)
 
-                val signUpRequest = JsonObjectRequest(Request.Method.POST, url, userJsonBody,
+                val signUpRequest = JsonObjectRequest(Request.Method.POST, url, JSONObject(userJsonBody),
                     { response ->
                         if (response.getString("response").equals("success")) {
                             navController.navigate("home")
@@ -182,7 +179,7 @@ fun SignupScreen(modifier: Modifier = Modifier, navController: NavController, au
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DisplayLangSpinner() {
-    val parentOptions = listOf("English","Mandarin Chinese","German","French","Spanish","Korean","Japanese","Russian")
+    val parentOptions = listOf("Mandarin Chinese","German","French","Spanish","Korean","Japanese","Russian")
     var expandedState by remember { mutableStateOf(false) }
     var selectedOption by remember { mutableStateOf(parentOptions[0]) }
 
