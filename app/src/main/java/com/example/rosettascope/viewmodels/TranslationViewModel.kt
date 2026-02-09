@@ -13,10 +13,10 @@ class TranslationViewModel : ViewModel() {
     val translationResult = MutableLiveData<TranslationResponse>()
     val errorMessage = MutableLiveData<String>()
 
-    fun translateWord(word: String, targetLanguage: String) {
+    fun translateWord(word: String, targetLanguage: String, confidenceMastered: Double) {
         viewModelScope.launch {
             try {
-                val response = translationRepository.translateWord(word, targetLanguage)
+                val response = translationRepository.translateWord(word, targetLanguage, confidenceMastered)
                 translationResult.postValue(response)
             } catch (e: Exception) {
                 errorMessage.postValue(e.message)

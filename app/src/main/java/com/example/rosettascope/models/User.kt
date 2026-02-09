@@ -10,5 +10,5 @@ data class User(
     @SerializedName("wordsEncountered") var wordsEncountered: Int,
     @SerializedName("wordsMastered") var wordsMastered: Int,
     @SerializedName("scores") val scores: ArrayList<Score>,
-    @SerializedName("confidenceScores") val confidenceScores: MutableMap<String, Int>
+    @SerializedName("confidenceScores") val confidenceScores: MutableMap<String, Double>
 )

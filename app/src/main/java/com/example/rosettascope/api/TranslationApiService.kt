@@ -5,7 +5,8 @@ import retrofit2.http.POST
 
 data class TranslationRequest(
     val word: String,
-    val targetLanguage: String
+    val targetLanguage: String,
+    val confidenceMastered: Double
 )
 
 data class TranslationResponse(
@@ -18,12 +19,14 @@ data class TranslationResponse(
 data class GradingRequest(
     val refText: String,
     val targetLanguage: String,
-    val recordingAudioBytes: String
+    val recordingAudioBytes: String,
+    val confidenceMastered: Double
 )
 
 data class GradingResponse(
     val result: String,
-    val feedback: String
+    val feedback: String,
+    val new_confidence_mastered: Double
 )
 
 interface TranslationApiService {
