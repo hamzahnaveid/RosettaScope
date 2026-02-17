@@ -82,6 +82,7 @@ class CameraFragment : Fragment(), ObjectDetectorHelper.DetectorListener {
 
     private var fullTranslation: String = ""
     private var currentDialog: AlertDialog? = null
+    private var currentWord: String = ""
 
     private var currentAudioBase64: String? = null
     private var translatedWord: String = ""
@@ -203,8 +204,14 @@ class CameraFragment : Fragment(), ObjectDetectorHelper.DetectorListener {
         // Attach listeners to UI control widgets
         fragmentCameraBinding.overlay.setRunningMode(RunningMode.LIVE_STREAM)
         fragmentCameraBinding.overlay.setOnBoxTapListener(object : OverlayView.OnBoxTapListener {
+
             override fun onBoxTapped(word: String) {
-                translationViewModel.translateWord(word, user?.targetLanguage.toString())
+                var confidenceScore = 0.01
+                currentWord = word
+                if (user!!.confidenceScores.contains(word)) {
+                    confidenceScore = user!!.confidenceScores.get(word)!!
+                }
+                translationViewModel.translateWord(word, user!!.targetLanguage.toString(), confidenceScore)
                 showTranslationLoadingDialog(word)
             }
         })
@@ -346,7 +353,8 @@ class CameraFragment : Fragment(), ObjectDetectorHelper.DetectorListener {
         gradingViewModel.gradingResult.observe(viewLifecycleOwner) { response ->
             hideLoadingDialog()
             Log.d("GradeResult", response.result)
-            showGradeDialog(response.result, response.feedback)
+            Log.d("BKTResult", response.new_confidence_mastered.toString())
+            showGradeDialog(response.result, response.feedback, response.new_confidence_mastered)
         }
 
         gradingViewModel.errorMessage.observe(viewLifecycleOwner) { error ->
@@ -412,7 +420,7 @@ class CameraFragment : Fragment(), ObjectDetectorHelper.DetectorListener {
         dialog.show()
     }
 
-    private fun showGradeDialog(jsonResult: String, feedback: String) {
+    private fun showGradeDialog(jsonResult: String, feedback: String, newConfidenceMastered: Double) {
         val view = LayoutInflater.from(requireContext()).inflate(R.layout.dialog_grade, null)
 
         val tvTranslated: TextView = view.findViewById(R.id.textview_grade_translation)
@@ -523,7 +531,7 @@ class CameraFragment : Fragment(), ObjectDetectorHelper.DetectorListener {
             .setTitle("Pronunciation Assessment")
             .setView(view)
             .setNegativeButton("Continue", DialogInterface.OnClickListener() { dialog, _ ->
-                saveScoreToDB(fullTranslation, pronScore)
+                saveScoreToDB(fullTranslation, pronScore, newConfidenceMastered)
                 dialog.dismiss()
             })
             .create()
@@ -615,7 +623,13 @@ class CameraFragment : Fragment(), ObjectDetectorHelper.DetectorListener {
         val bytes = file.readBytes()
         Log.d("MediaRecorder", "Recording saved to ${file.absolutePath}")
         val bytesString = android.util.Base64.encodeToString(bytes, android.util.Base64.NO_WRAP)
-        gradingViewModel.gradeSpeech(fullTranslation, user?.targetLanguage.toString(), bytesString)
+
+        var confidenceScore = 0.01
+        if (user!!.confidenceScores.contains(currentWord)) {
+            confidenceScore = user!!.confidenceScores.get(currentWord)!!
+        }
+
+        gradingViewModel.gradeSpeech(fullTranslation, user?.targetLanguage.toString(), bytesString, confidenceScore)
         showGradeLoadingDialog()
     }
 
@@ -651,7 +665,7 @@ class CameraFragment : Fragment(), ObjectDetectorHelper.DetectorListener {
         queue.add(getUserRequest)
     }
 
-    private fun saveScoreToDB(word: String, score: Int) {
+    private fun saveScoreToDB(word: String, score: Int, confidenceScore: Double) {
         val gson = Gson()
         val queue = Volley.newRequestQueue(context);
         val url = "https://gaston-distant-unamicably.ngrok-free.dev/user-save"
@@ -659,10 +673,14 @@ class CameraFragment : Fragment(), ObjectDetectorHelper.DetectorListener {
         val userScore = Score(null, word, user!!.targetLanguage, score)
          user!!.scores.add(userScore)
 
-        if (!user!!.confidenceScores.contains(translatedWord)) {
+        if (!user!!.confidenceScores.contains(currentWord)) {
             user!!.wordsEncountered += 1
         }
-        user!!.confidenceScores.put(translatedWord, score)
+
+        if (confidenceScore > 0.95) {
+            user!!.wordsMastered += 1
+        }
+        user!!.confidenceScores.put(currentWord, confidenceScore)
 
         val userJsonBody = gson.toJson(user)
 

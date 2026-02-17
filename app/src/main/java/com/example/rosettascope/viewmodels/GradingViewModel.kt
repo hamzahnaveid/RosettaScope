@@ -13,10 +13,10 @@ class GradingViewModel : ViewModel() {
     val gradingResult = MutableLiveData<GradingResponse>()
     val errorMessage = MutableLiveData<String>()
 
-    fun gradeSpeech(refText: String, targetLanguage: String, recordingAudioBytes: String) {
+    fun gradeSpeech(refText: String, targetLanguage: String, recordingAudioBytes: String, confidenceMastered: Double) {
         viewModelScope.launch {
             try {
-                val response = gradingRepository.gradeSpeech(refText, targetLanguage, recordingAudioBytes)
+                val response = gradingRepository.gradeSpeech(refText, targetLanguage, recordingAudioBytes, confidenceMastered)
                 gradingResult.postValue(response)
             } catch (e: Exception) {
                 errorMessage.postValue(e.message)
