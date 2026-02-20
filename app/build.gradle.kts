@@ -66,6 +66,9 @@ dependencies {
     implementation(libs.androidx.navigation.compose)
     implementation(libs.androidx.compose.runtime.livedata)
     implementation(libs.androidx.appcompat)
+    implementation(libs.androidx.ui.graphics)
+    implementation(libs.material)
+    implementation(libs.androidx.activity)
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)

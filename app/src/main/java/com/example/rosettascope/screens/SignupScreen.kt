@@ -1,6 +1,7 @@
 package com.example.rosettascope.screens
 
 import android.content.Context
+import android.content.Intent
 import android.util.Log
 import android.widget.Toast
 import androidx.compose.foundation.layout.Arrangement
@@ -31,8 +32,8 @@ import androidx.navigation.NavController
 import com.android.volley.Request
 import com.android.volley.toolbox.JsonObjectRequest
 import com.android.volley.toolbox.Volley
+import com.example.rosettascope.HomeActivity
 import com.example.rosettascope.models.User
-import com.example.rosettascope.viewmodels.AuthViewModel
 import com.google.gson.Gson
 import org.json.JSONObject
 
@@ -40,25 +41,12 @@ var targetLanguage = "German"
 var proficiency  = "Beginner"
 
 @Composable
-fun SignupScreen(modifier: Modifier = Modifier, navController: NavController, authViewModel: AuthViewModel) {
+fun SignupScreen(modifier: Modifier = Modifier, navController: NavController) {
 
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
 
-//    val authState = authViewModel.authState.observeAsState()
     val context = LocalContext.current
-
-//    LaunchedEffect(authState.value) {
-//        when (authState.value) {
-//            is AuthState.Authenticated -> navController.navigate("home")
-//            is AuthState.Error -> Toast.makeText(
-//                context,
-//                (authState.value as AuthState.Error).message,
-//                Toast.LENGTH_SHORT)
-//                .show()
-//            else -> Unit
-//        }
-//    }
 
     Column(modifier = modifier
         .fillMaxSize(),
@@ -132,7 +120,7 @@ fun SignupScreen(modifier: Modifier = Modifier, navController: NavController, au
                 }
 
                 val gson = Gson()
-                val queue = Volley.newRequestQueue(context);
+                val queue = Volley.newRequestQueue(context)
                 val url = "https://gaston-distant-unamicably.ngrok-free.dev/signup"
 
                 val user = User(email, password, proficiency, targetLanguage, 0, 0, ArrayList(), mutableMapOf())
@@ -141,7 +129,8 @@ fun SignupScreen(modifier: Modifier = Modifier, navController: NavController, au
                 val signUpRequest = JsonObjectRequest(Request.Method.POST, url, JSONObject(userJsonBody),
                     { response ->
                         if (response.getString("response").equals("success")) {
-                            navController.navigate("home")
+                            val intent = Intent(context, HomeActivity::class.java)
+                            context.startActivity(intent)
 
                             context.getSharedPreferences("USER", Context.MODE_PRIVATE)
                                 .edit().putString("email", email).apply()
