@@ -1,76 +1,180 @@
 package com.example.rosettascope.screens
 
+import android.annotation.SuppressLint
 import android.content.Intent
-import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.material3.Button
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.navigation.NavController
 import com.example.rosettascope.CameraActivity
-import com.example.rosettascope.viewmodels.AuthViewModel
+import com.example.rosettascope.R
 
 @Composable
-fun HomeScreen(modifier: Modifier = Modifier, navController: NavController, authViewModel: AuthViewModel) {
-
-//    val authState = authViewModel.authState.observeAsState()
-    val context = LocalContext.current
-//    val email = context.getSharedPreferences("USER", Application.MODE_PRIVATE).getString("email", "")
-
-//    LaunchedEffect(email) {
-//        val queue = Volley.newRequestQueue(context);
-//        val url = "https://gaston-distant-unamicably.ngrok-free.dev/user/$email"
-//
-//        val getUserRequest = JsonObjectRequest(Request.Method.GET, url, null,
-//            { response ->
-//                navController.navigate("home")
-//                AlertDialog.Builder(context)
-//                    .setTitle("User Details")
-//                    .setMessage(response.toString())
-//                    .setPositiveButton("OK", null)
-//                    .show()
-//            },
-//            { error ->
-//                Toast.makeText(
-//                    context,
-//                    "Error connecting to server",
-//                    Toast.LENGTH_SHORT)
-//                    .show()
-//                Log.e("VolleyRequest", error.toString())
-//            })
-//        queue.add(getUserRequest)
-//    }
-
-    Column(modifier = modifier
-        .fillMaxSize(),
-        verticalArrangement = Arrangement.Center,
-        horizontalAlignment = Alignment.CenterHorizontally
+fun HomeScreen(modifier: Modifier = Modifier) {
+    Column(
+        modifier = modifier
+            .fillMaxSize()
+            .padding(16.dp)
+            .verticalScroll(rememberScrollState())
     ) {
-        Text(
-            text = "Home",
-            fontSize = 32.sp
+        UserGreeting()
+        StreakDisplay()
+        ActivityButtons()
+    }
+}
+
+@Composable
+fun UserGreeting() {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(top = 32.dp)
+    ) {
+        Box(modifier = Modifier
+            .fillMaxWidth()
+            .padding(start = 16.dp)
+            .height(40.dp)
+        ) {
+            Text(text = "Hello!",
+                color = Color.Black,
+                fontSize = 20.sp,
+                fontWeight = FontWeight.SemiBold
+            )
+        }
+    }
+}
+
+@Composable
+fun StreakDisplay() {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+    ) {
+        Image(
+            modifier = Modifier.size(55.dp),
+            //TODO get streak from server
+            painter = painterResource(id = R.drawable.no_streak),
+            contentDescription = "Streak badge")
+
+        Box(modifier = Modifier
+            .fillMaxWidth()
+            .padding(top = 34.dp)
+        ) {
+            Text(text = "0",
+                color = Color.Black,
+                fontSize = 20.sp,
+                fontWeight = FontWeight.SemiBold
+            )
+        }
+    }
+}
+
+@SuppressLint("RememberInComposition")
+@Composable
+fun ActivityButtons() {
+    val context = LocalContext.current
+
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(top = 24.dp)
+    ) {
+        Image(
+            modifier = Modifier
+                .height(170.dp)
+                .clip(RoundedCornerShape(20.dp))
+                .clickable(
+                    onClick = {
+                        val intent = Intent(context, CameraActivity::class.java)
+                        context.startActivity(intent)
+                    }
+                ),
+            painter = painterResource(id = R.drawable.discover_binoculars),
+            contentDescription = "Discover",
+            contentScale = ContentScale.Crop
         )
+    }
 
-        Button(
-            onClick = {
-                val intent = Intent(context, CameraActivity::class.java)
-                context.startActivity(intent)
-            }
-        ) {
-            Text(text = "Camera")
-        }
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(top = 24.dp)
+    ) {
+        Image(
+            modifier = Modifier
+                .height(170.dp)
+                .clip(RoundedCornerShape(20.dp))
+                .clickable(
+                    onClick = {
+//                        val intent = Intent(context, ChallengeActivity::class.java)
+//                        context.startActivity(intent)
+                    }
+                ),
+            painter = painterResource(id = R.drawable.challenge_dartboard),
+            contentDescription = "Discover",
+            contentScale = ContentScale.Crop
+        )
+    }
 
-        Button(
-            onClick = {
-                authViewModel.signout()
-            }
-        ) {
-            Text(text = "Sign Out")
-        }
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(top = 24.dp)
+    ) {
+        Image(
+            modifier = Modifier
+                .height(170.dp)
+                .clip(RoundedCornerShape(20.dp))
+                .clickable(
+                    onClick = {
+//                        val intent = Intent(context, WordBankActivity::class.java)
+//                        context.startActivity(intent)
+                    }
+                ),
+            painter = painterResource(id = R.drawable.wordbank_book),
+            contentDescription = "Discover",
+            contentScale = ContentScale.Crop
+        )
+    }
+
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(top = 24.dp)
+    ) {
+        Image(
+            modifier = Modifier
+                .height(170.dp)
+                .clip(RoundedCornerShape(20.dp))
+                .clickable(
+                    onClick = {
+//                        val intent = Intent(context, StatisticsActivity::class.java)
+//                        context.startActivity(intent)
+                    }
+                ),
+            painter = painterResource(id = R.drawable.progress_ladder),
+            contentDescription = "Discover",
+            contentScale = ContentScale.Crop
+        )
     }
 }

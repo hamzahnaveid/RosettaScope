@@ -1,6 +1,7 @@
 package com.example.rosettascope.screens
 
 import android.content.Context
+import android.content.Intent
 import android.util.Log
 import android.widget.Toast
 import androidx.compose.foundation.layout.Arrangement
@@ -26,28 +27,15 @@ import androidx.navigation.NavController
 import com.android.volley.Request
 import com.android.volley.toolbox.JsonObjectRequest
 import com.android.volley.toolbox.Volley
-import com.example.rosettascope.viewmodels.AuthViewModel
+import com.example.rosettascope.HomeActivity
 
 @Composable
-fun LoginScreen(modifier: Modifier = Modifier, navController: NavController, authViewModel: AuthViewModel) {
+fun LoginScreen(modifier: Modifier = Modifier, navController: NavController) {
 
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
 
-//    val authState = authViewModel.authState.observeAsState()
     val context = LocalContext.current
-
-//    LaunchedEffect(authState.value) {
-//        when (authState.value) {
-//            is AuthState.Authenticated -> navController.navigate("home")
-//            is AuthState.Error -> Toast.makeText(
-//                context,
-//                (authState.value as AuthState.Error).message,
-//                Toast.LENGTH_SHORT)
-//                .show()
-//            else -> Unit
-//        }
-//    }
 
     Column(modifier = modifier
         .fillMaxSize(),
@@ -93,14 +81,15 @@ fun LoginScreen(modifier: Modifier = Modifier, navController: NavController, aut
                     .show()
             }
             else {
-                val queue = Volley.newRequestQueue(context);
+                val queue = Volley.newRequestQueue(context)
                 val url = "https://gaston-distant-unamicably.ngrok-free.dev/login?email=$email&password=$password"
 
                 val getUserRequest = JsonObjectRequest(
                     Request.Method.GET, url, null,
                     { response ->
                         if (response.getString("response").equals("success")) {
-                            navController.navigate("home")
+                            val intent = Intent(context, HomeActivity::class.java)
+                            context.startActivity(intent)
 
                             context.getSharedPreferences("USER", Context.MODE_PRIVATE)
                                 .edit().putString("email", email).apply()
@@ -131,7 +120,6 @@ fun LoginScreen(modifier: Modifier = Modifier, navController: NavController, aut
                 queue.add(getUserRequest)
 
             }
-//            authViewModel.login(email, password)
         }) {
             Text(text = "Login")
         }
