@@ -54,13 +54,13 @@ fun NavHostContainer(modifier: Modifier = Modifier, navController: NavHostContro
 
     NavHost(navController = navController, startDestination = "Home", builder = {
         composable("Home") {
-            HomeScreen(modifier, navController)
+            HomeScreen(modifier)
         }
         composable("Profile") {
-            ProfileScreen(modifier, navController)
+            ProfileScreen(modifier)
         }
         composable("Settings") {
-            SettingsScreen(modifier, navController)
+            SettingsScreen(modifier)
         }
     })
 
