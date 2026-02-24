@@ -1,17 +1,24 @@
 package com.example.rosettascope.adapters
 
+import android.content.Context
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.ProgressBar
 import android.widget.TextView
+import android.widget.Toast
 import androidx.recyclerview.widget.RecyclerView
+import com.android.volley.Request
+import com.android.volley.toolbox.StringRequest
+import com.android.volley.toolbox.Volley
 import com.example.rosettascope.R
 
 class WordRecyclerViewAdapter(
     private val wordBank: List<String>,
-    private val discoveredWords: Map<String, Double>
+    private val discoveredWords: Map<String, Double>,
+    private val targetLanguage: String
 ) : RecyclerView.Adapter<WordRecyclerViewAdapter.ViewHolder>() {
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
@@ -31,69 +38,34 @@ class WordRecyclerViewAdapter(
         }
         else {
             holder.imgView.setImageResource(R.drawable.discovered)
-            holder.tvWord.text = item
+            setTextViewToTranslation(item, holder.tvWord, holder.itemView.context)
             holder.tvEngTranslation.text = item
             holder.progressBar.visibility = View.VISIBLE
             holder.tvMasteryLevel.visibility = View.VISIBLE
 
             when (discoveredWords.get(item)?.times(100)?.toInt()) {
                 in 0..24 -> {
-                    holder.progressBar.progress = (discoveredWords.get(item)!!/0.25).toInt()
+                    holder.progressBar.setProgress((discoveredWords.get(item)!!/0.25).times(100).toInt(), true)
                     holder.tvMasteryLevel.text = "Beginner"
                 }
 
                 in 25..76 -> {
-                    holder.progressBar.progress = (discoveredWords.get(item)!!/0.77).toInt()
+                    holder.progressBar.setProgress((discoveredWords.get(item)!!/0.77).times(100).toInt(), true)
                     holder.tvMasteryLevel.text = "Intermediate"
                 }
 
                 in 77..94 -> {
-                    holder.progressBar.progress = (discoveredWords.get(item)!!/0.95).toInt()
+                    holder.progressBar.setProgress((discoveredWords.get(item)!!/0.95).times(100).toInt(), true)
                     holder.tvMasteryLevel.text = "Advanced"
                 }
 
                 in 95..100 -> {
                     holder.imgView.setImageResource(R.drawable.mastered)
-                    holder.progressBar.progress = 100
+                    holder.progressBar.setProgress(100, true)
                     holder.tvMasteryLevel.text = "Mastered"
                 }
             }
         }
-//        val queue = Volley.newRequestQueue(holder.itemView.context)
-//        val url = "https://subopaquely-unirradiative-bradley.ngrok-free.dev/translate-word/${item}"
-//
-//        val translateWordRequest = StringRequest(
-//            Request.Method.GET, url,
-//            { response ->
-//                holder.tvEngTranslation.text = response
-//            },
-//            { error ->
-//                Toast.makeText(
-//                    holder.itemView.context,
-//                    "Error connecting to server",
-//                    Toast.LENGTH_SHORT
-//                )
-//                    .show()
-//                Log.e("VolleyRequest", error.toString())
-//            })
-//        queue.add(translateWordRequest)
-//
-//        when (item.score) {
-//            in 0..50 -> {
-//                holder.imgView.setImageResource(R.drawable.wrong)
-//
-//            }
-//            in 51..89 -> {
-//                holder.imgView.setImageResource(R.drawable.partial)
-//            }
-//            else -> {
-//                holder.imgView.setImageResource(R.drawable.correct)
-//            }
-//
-//        }
-//
-//        holder.tvGrapheme.text = item.word
-//        holder.tvAccuracyScore.text = item.score.toString()
     }
 
     override fun getItemCount(): Int = wordBank.size
@@ -106,4 +78,25 @@ class WordRecyclerViewAdapter(
         val tvMasteryLevel: TextView = itemView.findViewById(R.id.textView_mastery_level)
     }
 
+    fun setTextViewToTranslation(word: String, textView: TextView, context: Context) {
+        val queue = Volley.newRequestQueue(context)
+        val url = "https://subopaquely-unirradiative-bradley.ngrok-free.dev/translate-to-target/${word}/${targetLanguage}"
+
+        val translateWordRequest = StringRequest(
+            Request.Method.GET, url,
+            { response ->
+                textView.text = response
+            },
+            { error ->
+                Toast.makeText(
+                    context,
+                    "Error connecting to server",
+                    Toast.LENGTH_SHORT
+                )
+                    .show()
+                Log.e("VolleyRequest", error.toString())
+            })
+        queue.add(translateWordRequest)
+
+    }
 }

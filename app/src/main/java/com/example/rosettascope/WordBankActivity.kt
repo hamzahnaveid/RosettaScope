@@ -19,30 +19,31 @@ import com.google.gson.Gson
 import org.json.JSONArray
 
 class WordBankActivity : AppCompatActivity() {
+    private var user: User? = null
+    private val wordBank = mutableListOf<String>()
+    private var recyclerView: RecyclerView? = null
+    private var userRetrieved = false
+    private var wordBankRetrieved = false
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
-
-        val email = applicationContext?.getSharedPreferences("USER", Context.MODE_PRIVATE)
-            ?.getString("email", "").toString()
-
-        val user = retrieveUser(email)
-        val wordBank = retrieveWordBank()
-
         setContentView(R.layout.activity_word_bank)
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main)) { v, insets ->
             val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom)
             insets
         }
+        recyclerView = findViewById(R.id.rv_word_bank)
 
-        val adapter = WordRecyclerViewAdapter(wordBank, user!!.confidenceScores)
-        val recyclerView = findViewById<RecyclerView>(R.id.rv_word_bank)
-        recyclerView.adapter = adapter
+        val email = applicationContext?.getSharedPreferences("USER", Context.MODE_PRIVATE)
+            ?.getString("email", "").toString()
+
+        retrieveUser(email)
+        retrieveWordBank()
     }
 
-    private fun retrieveWordBank() : List<String> {
-        val wordBank = mutableListOf<String>()
+    private fun retrieveWordBank() {
 
         val queue = Volley.newRequestQueue(applicationContext)
         val url = "https://gaston-distant-unamicably.ngrok-free.dev/get-word-bank"
@@ -54,6 +55,9 @@ class WordBankActivity : AppCompatActivity() {
                 for (i in 0 until array.length()) {
                     wordBank.add(array.getString(i))
                 }
+                Log.d("JavaDB", "Word Bank retrieved")
+                wordBankRetrieved = true
+                trySetupRecyclerView()
             },
             { error ->
                 Toast.makeText(
@@ -65,11 +69,9 @@ class WordBankActivity : AppCompatActivity() {
                 Log.e("VolleyRequest", error.toString())
             })
         queue.add(retrieveWordBankRequest)
-        return wordBank
     }
 
-    private fun retrieveUser(email: String) : User? {
-        var user: User? = null
+    private fun retrieveUser(email: String) {
         val gson = Gson()
         val queue = Volley.newRequestQueue(applicationContext)
         val url = "https://gaston-distant-unamicably.ngrok-free.dev/user/$email"
@@ -80,6 +82,8 @@ class WordBankActivity : AppCompatActivity() {
                 val json = response.toString()
                 user = gson.fromJson(json, User::class.java)
                 Log.d("JavaDB", "User retrieved")
+                userRetrieved = true
+                trySetupRecyclerView()
             },
             { error ->
                 Toast.makeText(
@@ -91,6 +95,12 @@ class WordBankActivity : AppCompatActivity() {
                 Log.e("VolleyRequest", error.toString())
             })
         queue.add(getUserRequest)
-        return user
+    }
+
+    private fun trySetupRecyclerView() {
+        if (userRetrieved && wordBankRetrieved) {
+            val adapter = WordRecyclerViewAdapter(wordBank, user!!.confidenceScores, user!!.targetLanguage)
+            recyclerView!!.adapter = adapter
+        }
     }
 }
