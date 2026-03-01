@@ -99,7 +99,7 @@ class WordBankActivity : AppCompatActivity() {
 
     private fun trySetupRecyclerView() {
         if (userRetrieved && wordBankRetrieved) {
-            val adapter = WordRecyclerViewAdapter(wordBank, user!!.confidenceScores, user!!.targetLanguage)
+            val adapter = WordRecyclerViewAdapter(wordBank, user!!.confidenceScores)
             recyclerView!!.adapter = adapter
         }
     }
