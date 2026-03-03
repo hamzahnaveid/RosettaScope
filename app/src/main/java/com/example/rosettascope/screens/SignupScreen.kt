@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.Intent
 import android.util.Log
 import android.widget.Toast
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -25,7 +26,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
@@ -33,6 +36,7 @@ import com.android.volley.Request
 import com.android.volley.toolbox.JsonObjectRequest
 import com.android.volley.toolbox.Volley
 import com.example.rosettascope.HomeActivity
+import com.example.rosettascope.R
 import com.example.rosettascope.models.User
 import com.google.gson.Gson
 import org.json.JSONObject
@@ -46,6 +50,12 @@ fun SignupScreen(modifier: Modifier = Modifier, navController: NavController) {
     var password by remember { mutableStateOf("") }
 
     val context = LocalContext.current
+
+    Image(painter = painterResource(id = R.drawable.signup_bg),
+        contentDescription = "Background",
+        contentScale = ContentScale.Crop,
+        modifier = modifier.fillMaxSize()
+    )
 
     Column(modifier = modifier
         .fillMaxSize(),
