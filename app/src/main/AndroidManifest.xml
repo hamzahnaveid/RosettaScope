@@ -17,10 +17,10 @@
         android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
         android:fullBackupContent="@xml/backup_rules"
-        android:icon="@drawable/icon"
+        android:icon="@drawable/transparent_logo"
         android:label="@string/app_name"
         android:networkSecurityConfig="@xml/network_security_config"
-        android:roundIcon="@drawable/icon"
+        android:roundIcon="@drawable/transparent_logo"
         android:supportsRtl="true"
         android:theme="@style/Theme.RosettaScope"
         android:usesCleartextTraffic="true">
