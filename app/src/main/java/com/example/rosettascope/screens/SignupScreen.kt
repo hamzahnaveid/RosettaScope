@@ -38,7 +38,6 @@ import com.google.gson.Gson
 import org.json.JSONObject
 
 var targetLanguage = "German"
-var proficiency  = "Beginner"
 
 @Composable
 fun SignupScreen(modifier: Modifier = Modifier, navController: NavController) {
@@ -88,8 +87,6 @@ fun SignupScreen(modifier: Modifier = Modifier, navController: NavController) {
 
         Spacer(modifier = Modifier.height(8.dp))
 
-        DisplayProficiencySpinner()
-
         Spacer(modifier = Modifier.height(16.dp))
 
         Button(onClick = {
@@ -123,7 +120,7 @@ fun SignupScreen(modifier: Modifier = Modifier, navController: NavController) {
                 val queue = Volley.newRequestQueue(context)
                 val url = "https://gaston-distant-unamicably.ngrok-free.dev/signup"
 
-                val user = User(email, password, proficiency, targetLanguage, 0, 0, ArrayList(), mutableMapOf())
+                val user = User(email, password,  targetLanguage, 0, 0, ArrayList(), mutableMapOf())
                 val userJsonBody = gson.toJson(user)
 
                 val signUpRequest = JsonObjectRequest(Request.Method.POST, url, JSONObject(userJsonBody),
@@ -159,7 +156,6 @@ fun SignupScreen(modifier: Modifier = Modifier, navController: NavController) {
                     })
                 queue.add(signUpRequest)
             }
-//            authViewModel.signup(email, password)
         }) {
             Text(text = "Create account")
         }
@@ -177,11 +173,28 @@ fun SignupScreen(modifier: Modifier = Modifier, navController: NavController) {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DisplayLangSpinner() {
-    val parentOptions = listOf("German","French","Spanish","Vietnamese","Mandarin Chinese","Arabic","Hindi","Korean","Japanese","Russian","Swedish","Finnish","Polish","Italian","Dutch",)
+    val parentOptions = listOf(
+        "German",
+        "French",
+        "Spanish",
+        "Vietnamese",
+        "Mandarin Chinese",
+        "Arabic",
+        "Hindi",
+        "Korean",
+        "Japanese",
+        "Russian",
+        "Swedish",
+        "Finnish",
+        "Polish",
+        "Italian",
+        "Dutch",
+    )
     var expandedState by remember { mutableStateOf(false) }
     var selectedOption by remember { mutableStateOf(parentOptions[0]) }
 
-    ExposedDropdownMenuBox(expanded = expandedState,
+    ExposedDropdownMenuBox(
+        expanded = expandedState,
         onExpandedChange = { expandedState = !expandedState }) {
 
         TextField(
@@ -193,11 +206,11 @@ fun DisplayLangSpinner() {
                 ExposedDropdownMenuDefaults.TrailingIcon(expanded = expandedState)
             })
 
-        ExposedDropdownMenu(expanded = expandedState,
+        ExposedDropdownMenu(
+            expanded = expandedState,
             onDismissRequest = { expandedState = false }) {
 
-            parentOptions.forEach {
-                item ->
+            parentOptions.forEach { item ->
                 DropdownMenuItem(text = {
                     Text(text = item)
                 }, onClick = {
@@ -210,38 +223,3 @@ fun DisplayLangSpinner() {
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun DisplayProficiencySpinner() {
-    val parentOptions = listOf("Beginner","Intermediate","Advanced")
-    var expandedState by remember { mutableStateOf(false) }
-    var selectedOption by remember { mutableStateOf(parentOptions[0]) }
-
-    ExposedDropdownMenuBox(expanded = expandedState,
-        onExpandedChange = { expandedState = !expandedState }) {
-
-        TextField(
-            value = selectedOption,
-            onValueChange = {},
-            readOnly = true,
-            modifier = Modifier.menuAnchor(),
-            trailingIcon = {
-                ExposedDropdownMenuDefaults.TrailingIcon(expanded = expandedState)
-            })
-
-        ExposedDropdownMenu(expanded = expandedState,
-            onDismissRequest = { expandedState = false }) {
-
-            parentOptions.forEach {
-                    item ->
-                DropdownMenuItem(text = {
-                    Text(text = item)
-                }, onClick = {
-                    selectedOption = item
-                    expandedState = false
-                    proficiency = selectedOption
-                })
-            }
-        }
-    }
-}
