@@ -1,12 +1,33 @@
 package com.example.rosettascope
 
+import android.content.Context
 import android.os.Bundle
+import android.util.Log
+import android.widget.Toast
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
+import com.android.volley.Request
+import com.android.volley.toolbox.JsonObjectRequest
+import com.android.volley.toolbox.Volley
+import com.example.rosettascope.helpers.LineChartXAxisValueFormatter
+import com.example.rosettascope.models.Score
+import com.example.rosettascope.models.User
+import com.github.mikephil.charting.charts.LineChart
+import com.github.mikephil.charting.components.LimitLine
+import com.github.mikephil.charting.components.XAxis
+import com.github.mikephil.charting.data.Entry
+import com.github.mikephil.charting.data.LineData
+import com.github.mikephil.charting.data.LineDataSet
+import com.google.gson.Gson
 
 class WordActivity : AppCompatActivity() {
+
+    private var user: User? = null
+    private var userRetrieved = false
+    private var word: String? = null
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
@@ -16,5 +37,74 @@ class WordActivity : AppCompatActivity() {
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom)
             insets
         }
+        val email = applicationContext?.getSharedPreferences("USER", Context.MODE_PRIVATE)
+            ?.getString("email", "").toString()
+        word = intent.getStringExtra("word")
+
+        val chart = findViewById<LineChart>(R.id.line_chart)
+        chart.xAxis.valueFormatter = LineChartXAxisValueFormatter()
+
+        retrieveUserAndPopulateChart(email, chart)
     }
+
+    private fun retrieveUserAndPopulateChart(email: String, chart: LineChart) {
+        val gson = Gson()
+        val queue = Volley.newRequestQueue(applicationContext)
+        val url = "https://gaston-distant-unamicably.ngrok-free.dev/user/$email"
+
+        val getUserRequest = JsonObjectRequest(
+            Request.Method.GET, url, null,
+            { response ->
+                val json = response.toString()
+                user = gson.fromJson(json, User::class.java)
+                Log.d("JavaDB", "User retrieved")
+                userRetrieved = true
+                populateChart(chart)
+            },
+            { error ->
+                Toast.makeText(
+                    applicationContext,
+                    "Error connecting to server",
+                    Toast.LENGTH_SHORT
+                )
+                    .show()
+                Log.e("VolleyRequest", error.toString())
+            })
+        queue.add(getUserRequest)
+    }
+
+    private fun populateChart(chart: LineChart) {
+        val entries = mutableListOf<Entry>()
+        val scores = user?.scores
+        val wordScores = getWordScores(scores!!, word!!)
+
+
+        for (i in 0 until wordScores!!.size) {
+            entries.add(Entry(wordScores[i].timestamp.toFloat(), wordScores[i].score.toFloat()))
+        }
+
+        val dataSet = LineDataSet(entries, "Scores")
+        val lineData = LineData(dataSet)
+
+        val xLabel = LimitLine(140f, "Date")
+        val yLabel = LimitLine(100f, "Score")
+        chart.xAxis.addLimitLine(xLabel)
+        chart.axisLeft.addLimitLine(yLabel)
+        chart.xAxis.position = XAxis.XAxisPosition.BOTTOM
+
+        chart.data = lineData
+        chart.invalidate()
+        }
+
+    private fun getWordScores(scores: List<Score>, word: String): List<Score> {
+        val wordScores = mutableListOf<Score>()
+
+        for (i in 0 until scores.size) {
+            if (scores[i].engWord == word) {
+                wordScores.add(scores[i])
+            }
+        }
+        return wordScores
+    }
+
 }

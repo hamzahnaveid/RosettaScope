@@ -549,7 +549,16 @@ class CameraFragment : Fragment(), ObjectDetectorHelper.DetectorListener {
             } catch (e: JSONException) {
                 0
             }
-            scores.add(Score(null, word, user!!.targetLanguage, score))
+            scores.add(
+                Score(
+                    null,
+                    word,
+                    user!!.targetLanguage,
+                    score,
+                    currentWord,
+                    System.currentTimeMillis()
+                )
+            )
         }
         return scores
     }
@@ -667,10 +676,11 @@ class CameraFragment : Fragment(), ObjectDetectorHelper.DetectorListener {
 
     private fun saveScoreToDB(word: String, score: Int, confidenceScore: Double) {
         val gson = Gson()
-        val queue = Volley.newRequestQueue(context);
+        val queue = Volley.newRequestQueue(context)
         val url = "https://gaston-distant-unamicably.ngrok-free.dev/user-save"
 
-        val userScore = Score(null, word, user!!.targetLanguage, score)
+        val timestamp = System.currentTimeMillis()
+        val userScore = Score(null, word, user!!.targetLanguage, score, currentWord, timestamp)
          user!!.scores.add(userScore)
 
         if (!user!!.confidenceScores.contains(currentWord)) {
