@@ -16,13 +16,12 @@
         android:layout_weight="1"
         android:gravity="center"
         android:paddingBottom="16dp"
-        android:text="Word"
         android:textSize="24sp" />
 
     <com.github.mikephil.charting.charts.LineChart
         android:id="@+id/line_chart"
         android:layout_width="match_parent"
-        android:layout_height="250dp"
+        android:layout_height="500dp"
         android:padding="20dp" />
 
 </LinearLayout>

@@ -3,6 +3,7 @@ package com.example.rosettascope
 import android.content.Context
 import android.os.Bundle
 import android.util.Log
+import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
@@ -10,6 +11,7 @@ import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import com.android.volley.Request
 import com.android.volley.toolbox.JsonObjectRequest
+import com.android.volley.toolbox.StringRequest
 import com.android.volley.toolbox.Volley
 import com.example.rosettascope.helpers.LineChartXAxisValueFormatter
 import com.example.rosettascope.models.Score
@@ -60,6 +62,9 @@ class WordActivity : AppCompatActivity() {
                 Log.d("JavaDB", "User retrieved")
                 userRetrieved = true
                 populateChart(chart)
+
+                val tvWord = findViewById<TextView>(R.id.textView_word_display)
+                setTextViewToTranslation(word!!, user!!.targetLanguage.toString(), tvWord)
             },
             { error ->
                 Toast.makeText(
@@ -105,6 +110,28 @@ class WordActivity : AppCompatActivity() {
             }
         }
         return wordScores
+    }
+
+    fun setTextViewToTranslation(word: String, targetLanguage: String, textView: TextView) {
+        val queue = Volley.newRequestQueue(this)
+        val url = "https://subopaquely-unirradiative-bradley.ngrok-free.dev/translate-to-target/${word}/${targetLanguage}"
+
+        val translateWordRequest = StringRequest(
+            Request.Method.GET, url,
+            { response ->
+                textView.text = response
+            },
+            { error ->
+                Toast.makeText(
+                    this,
+                    "Error connecting to server",
+                    Toast.LENGTH_SHORT
+                )
+                    .show()
+                Log.e("VolleyRequest", error.toString())
+            })
+        queue.add(translateWordRequest)
+
     }
 
 }
