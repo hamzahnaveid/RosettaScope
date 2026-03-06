@@ -54,6 +54,7 @@ import com.example.rosettascope.adapters.ScoreRecyclerViewAdapter
 import com.example.rosettascope.ar.OverlayView
 import com.example.rosettascope.databinding.FragmentCameraBinding
 import com.example.rosettascope.helpers.ObjectDetectorHelper
+import com.example.rosettascope.helpers.ScoreRequest
 import com.example.rosettascope.models.Score
 import com.example.rosettascope.models.User
 import com.example.rosettascope.viewmodels.CameraViewModel
@@ -677,11 +678,20 @@ class CameraFragment : Fragment(), ObjectDetectorHelper.DetectorListener {
     private fun saveScoreToDB(word: String, score: Int, confidenceScore: Double) {
         val gson = Gson()
         val queue = Volley.newRequestQueue(context)
-        val url = "https://gaston-distant-unamicably.ngrok-free.dev/user-save"
+        val url = "https://gaston-distant-unamicably.ngrok-free.dev/add-score"
 
-        val timestamp = System.currentTimeMillis()
-        val userScore = Score(null, word, user!!.targetLanguage, score, currentWord, timestamp)
-         user!!.scores.add(userScore)
+        val scoreRequest = ScoreRequest(
+            user!!.email,
+            word,
+            user!!.targetLanguage,
+            score,
+            currentWord,
+            System.currentTimeMillis(),
+            confidenceScore
+        )
+
+        val userScore = Score(null, word, user!!.targetLanguage, score, currentWord, System.currentTimeMillis())
+        user!!.scores.add(userScore)
 
         if (!user!!.confidenceScores.contains(currentWord)) {
             user!!.wordsEncountered += 1
@@ -692,10 +702,10 @@ class CameraFragment : Fragment(), ObjectDetectorHelper.DetectorListener {
         }
         user!!.confidenceScores.put(currentWord, confidenceScore)
 
-        val userJsonBody = gson.toJson(user)
+        val json = JSONObject(gson.toJson(scoreRequest))
 
-        val saveUserRequest = JsonObjectRequest(
-            Request.Method.POST, url, JSONObject(userJsonBody),
+        val saveScoreRequest = JsonObjectRequest(
+            Request.Method.POST, url, json,
             { response ->
                 Toast.makeText(
                     context,
@@ -703,9 +713,9 @@ class CameraFragment : Fragment(), ObjectDetectorHelper.DetectorListener {
                     Toast.LENGTH_SHORT
                 )
                     .show()
-                Log.d("JavaDB", "User saved")
+                Log.d("JavaDB", "Score saved")
             }, {
-                error ->
+                    error ->
                 Toast.makeText(
                     context,
                     "Error connecting to server",
@@ -714,6 +724,6 @@ class CameraFragment : Fragment(), ObjectDetectorHelper.DetectorListener {
                     .show()
                 Log.e("VolleyRequest", error.toString())
             })
-        queue.add(saveUserRequest)
+        queue.add(saveScoreRequest)
     }
 }
