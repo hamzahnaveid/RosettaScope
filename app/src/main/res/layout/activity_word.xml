@@ -1,13 +1,17 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/main"
     android:layout_width="match_parent"
-    android:layout_height="wrap_content"
-    android:orientation="vertical"
-    android:padding="20dp"
+    android:layout_height="match_parent"
     tools:context=".WordActivity">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="20dp">
 
     <TextView
         android:id="@+id/textView_word_display"
@@ -24,4 +28,16 @@
         android:layout_height="500dp"
         android:padding="20dp" />
 
-</LinearLayout>
+        <TextView
+            android:id="@+id/textView_feedback_display"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:gravity="center"
+            android:paddingBottom="16dp"
+            android:text="Loading feedback..."
+            android:textSize="24sp" />
+
+    </LinearLayout>
+
+</ScrollView>

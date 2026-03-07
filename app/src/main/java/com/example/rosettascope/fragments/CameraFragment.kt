@@ -532,7 +532,7 @@ class CameraFragment : Fragment(), ObjectDetectorHelper.DetectorListener {
             .setTitle("Pronunciation Assessment")
             .setView(view)
             .setNegativeButton("Continue", DialogInterface.OnClickListener() { dialog, _ ->
-                saveScoreToDB(fullTranslation, pronScore, newConfidenceMastered)
+                saveScoreToDB(fullTranslation, pronScore, newConfidenceMastered, feedback)
                 dialog.dismiss()
             })
             .create()
@@ -557,7 +557,8 @@ class CameraFragment : Fragment(), ObjectDetectorHelper.DetectorListener {
                     user!!.targetLanguage,
                     score,
                     currentWord,
-                    System.currentTimeMillis()
+                    System.currentTimeMillis(),
+                    ""
                 )
             )
         }
@@ -675,7 +676,7 @@ class CameraFragment : Fragment(), ObjectDetectorHelper.DetectorListener {
         queue.add(getUserRequest)
     }
 
-    private fun saveScoreToDB(word: String, score: Int, confidenceScore: Double) {
+    private fun saveScoreToDB(word: String, score: Int, confidenceScore: Double, feedback: String) {
         val gson = Gson()
         val queue = Volley.newRequestQueue(context)
         val url = "https://gaston-distant-unamicably.ngrok-free.dev/add-score"
@@ -687,10 +688,11 @@ class CameraFragment : Fragment(), ObjectDetectorHelper.DetectorListener {
             score,
             currentWord,
             System.currentTimeMillis(),
+            feedback,
             confidenceScore
         )
 
-        val userScore = Score(null, word, user!!.targetLanguage, score, currentWord, System.currentTimeMillis())
+        val userScore = Score(null, word, user!!.targetLanguage, score, currentWord, System.currentTimeMillis(), feedback)
         user!!.scores.add(userScore)
 
         if (!user!!.confidenceScores.contains(currentWord)) {

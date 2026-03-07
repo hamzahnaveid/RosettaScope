@@ -82,26 +82,4 @@ class WordRecyclerViewAdapter(
         val imgViewArrow: ImageView = itemView.findViewById(R.id.imageView_arrow_to_word)
 
     }
-
-//    fun setTextViewToTranslation(word: String, textView: TextView, context: Context) {
-//        val queue = Volley.newRequestQueue(context)
-//        val url = "https://subopaquely-unirradiative-bradley.ngrok-free.dev/translate-to-target/${word}/${targetLanguage}"
-//
-//        val translateWordRequest = StringRequest(
-//            Request.Method.GET, url,
-//            { response ->
-//                textView.text = response
-//            },
-//            { error ->
-//                Toast.makeText(
-//                    context,
-//                    "Error connecting to server",
-//                    Toast.LENGTH_SHORT
-//                )
-//                    .show()
-//                Log.e("VolleyRequest", error.toString())
-//            })
-//        queue.add(translateWordRequest)
-//
-//    }
 }

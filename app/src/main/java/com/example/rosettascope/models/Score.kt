@@ -8,5 +8,6 @@ data class Score(
     @SerializedName("language") val language: String,
     @SerializedName("score") val score: Int,
     @SerializedName("engWord") val engWord: String,
-    @SerializedName("timestamp") val timestamp: Long
+    @SerializedName("timestamp") val timestamp: Long,
+    @SerializedName("feedback") val feedback: String
 )

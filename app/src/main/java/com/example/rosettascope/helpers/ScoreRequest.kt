@@ -7,5 +7,6 @@ data class ScoreRequest(
     val score: Int,
     val engWord: String,
     val timestamp: Long,
+    val feedback: String,
     val confidenceScore: Double
 )
