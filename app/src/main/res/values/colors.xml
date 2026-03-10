@@ -8,4 +8,6 @@
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
     <color name="rosetta_yellow">#F1CB1B</color>
+    <color name="rosetta_blue">#71AFB6</color>
+    <color name="rosetta_bluer">#51709C</color>
 </resources>

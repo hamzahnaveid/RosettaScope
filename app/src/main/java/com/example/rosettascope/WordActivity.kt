@@ -15,13 +15,11 @@ import com.android.volley.Request
 import com.android.volley.toolbox.JsonObjectRequest
 import com.android.volley.toolbox.StringRequest
 import com.android.volley.toolbox.Volley
-import com.example.rosettascope.helpers.LineChartXAxisValueFormatter
+import com.example.rosettascope.helpers.SparkLineStyle
 import com.example.rosettascope.models.Score
 import com.example.rosettascope.models.User
 import com.example.rosettascope.viewmodels.FeedbackViewModel
 import com.github.mikephil.charting.charts.LineChart
-import com.github.mikephil.charting.components.LimitLine
-import com.github.mikephil.charting.components.XAxis
 import com.github.mikephil.charting.data.Entry
 import com.github.mikephil.charting.data.LineData
 import com.github.mikephil.charting.data.LineDataSet
@@ -29,6 +27,8 @@ import com.google.gson.Gson
 import org.json.JSONArray
 
 class WordActivity : AppCompatActivity() {
+
+    var chartStyle = SparkLineStyle(this)
 
     val feedbackViewModel: FeedbackViewModel by viewModels()
 
@@ -50,7 +50,6 @@ class WordActivity : AppCompatActivity() {
         word = intent.getStringExtra("word")
 
         val chart = findViewById<LineChart>(R.id.line_chart)
-        chart.xAxis.valueFormatter = LineChartXAxisValueFormatter()
 
         observeFeedbackViewModel()
         retrieveUserAndPopulateChart(email, chart)
@@ -94,17 +93,14 @@ class WordActivity : AppCompatActivity() {
 
 
         for (i in 0 until wordScores!!.size) {
-            entries.add(Entry(wordScores[i].timestamp.toFloat(), wordScores[i].score.toFloat()))
+            entries.add(Entry(i.toFloat(), wordScores[i].score.toFloat()))
         }
 
         val dataSet = LineDataSet(entries, "Scores")
         val lineData = LineData(dataSet)
 
-        val xLabel = LimitLine(140f, "Date")
-        val yLabel = LimitLine(100f, "Score")
-        chart.xAxis.addLimitLine(xLabel)
-        chart.axisLeft.addLimitLine(yLabel)
-        chart.xAxis.position = XAxis.XAxisPosition.BOTTOM
+        chartStyle.styleChart(chart)
+        chartStyle.styleLineDataSet(dataSet)
 
         chart.data = lineData
         chart.invalidate()
