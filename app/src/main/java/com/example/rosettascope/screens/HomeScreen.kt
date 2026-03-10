@@ -28,6 +28,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.rosettascope.CameraActivity
 import com.example.rosettascope.R
+import com.example.rosettascope.WordBankActivity
 
 @Composable
 fun HomeScreen(modifier: Modifier = Modifier) {
@@ -147,8 +148,8 @@ fun ActivityButtons() {
                 .clip(RoundedCornerShape(20.dp))
                 .clickable(
                     onClick = {
-//                        val intent = Intent(context, WordBankActivity::class.java)
-//                        context.startActivity(intent)
+                        val intent = Intent(context, WordBankActivity::class.java)
+                        context.startActivity(intent)
                     }
                 ),
             painter = painterResource(id = R.drawable.wordbank_book),

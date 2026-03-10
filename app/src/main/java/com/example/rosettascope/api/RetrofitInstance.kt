@@ -15,12 +15,12 @@ object RetrofitInstance {
         .writeTimeout(60, TimeUnit.SECONDS)
         .build()
 
-    val api: TranslationApiService by lazy {
+    val api: ApiService by lazy {
         Retrofit.Builder()
             .client(okHttpClient)
             .baseUrl(BASE_URL)
             .addConverterFactory(GsonConverterFactory.create())
             .build()
-            .create(TranslationApiService::class.java)
+            .create(ApiService::class.java)
     }
 }

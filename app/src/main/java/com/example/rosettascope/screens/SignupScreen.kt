@@ -4,20 +4,27 @@ import android.content.Context
 import android.content.Intent
 import android.util.Log
 import android.widget.Toast
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextField
+import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -25,7 +32,13 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.colorResource
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
@@ -33,12 +46,12 @@ import com.android.volley.Request
 import com.android.volley.toolbox.JsonObjectRequest
 import com.android.volley.toolbox.Volley
 import com.example.rosettascope.HomeActivity
+import com.example.rosettascope.R
 import com.example.rosettascope.models.User
 import com.google.gson.Gson
 import org.json.JSONObject
 
 var targetLanguage = "German"
-var proficiency  = "Beginner"
 
 @Composable
 fun SignupScreen(modifier: Modifier = Modifier, navController: NavController) {
@@ -48,17 +61,48 @@ fun SignupScreen(modifier: Modifier = Modifier, navController: NavController) {
 
     val context = LocalContext.current
 
+    Image(painter = painterResource(id = R.drawable.signup_bg),
+        contentDescription = "Background",
+        contentScale = ContentScale.Crop,
+        modifier = modifier.fillMaxSize()
+    )
+
     Column(modifier = modifier
         .fillMaxSize(),
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Text(
-            text = "Sign Up",
-            fontSize = 32.sp
+        Image(painter = painterResource(id = R.drawable.transparent_logo),
+            contentDescription = null,
+            modifier = Modifier
+                .padding(top = 54.dp, start = 16.dp)
+                .height(100.dp)
+                .align(Alignment.Start)
+                .offset(x = (-20).dp)
         )
 
-        Spacer(modifier = Modifier.height(16.dp))
+        Text(text = "Sign Up",
+            style = TextStyle(
+                fontSize = 28.sp,
+                fontWeight = FontWeight(500),
+                color = Color.White
+            ),
+            modifier = Modifier
+                .padding(start = 16.dp)
+                .align(Alignment.Start)
+        )
+
+        Text("Start your journey in language learning with Rosetta Scope",
+            style = TextStyle(
+                fontSize = 20.sp,
+                color = Color.White
+            ),
+            modifier = Modifier
+                .align(Alignment.Start)
+                .padding(start = 16.dp, end = 16.dp)
+        )
+
+        Spacer(modifier = Modifier.height(32.dp))
 
         OutlinedTextField(
             value = email,
@@ -66,8 +110,15 @@ fun SignupScreen(modifier: Modifier = Modifier, navController: NavController) {
                 email = it
             },
             label = {
-                Text(text = "Email")
-            }
+                Text(text = "Email Address")
+            },
+            colors = TextFieldDefaults.colors(
+                focusedContainerColor = Color.Transparent,
+                focusedIndicatorColor = colorResource(R.color.rosetta_yellow),
+                focusedLabelColor = colorResource(R.color.rosetta_yellow),
+                focusedTextColor = Color.White,
+                unfocusedContainerColor = Color.Transparent
+            )
         )
 
         Spacer(modifier = Modifier.height(8.dp))
@@ -79,18 +130,21 @@ fun SignupScreen(modifier: Modifier = Modifier, navController: NavController) {
             },
             label = {
                 Text(text = "Password")
-            }
+            },
+            colors = TextFieldDefaults.colors(
+                focusedContainerColor = Color.Transparent,
+                focusedIndicatorColor = colorResource(R.color.rosetta_yellow),
+                focusedLabelColor = colorResource(R.color.rosetta_yellow),
+                focusedTextColor = Color.White,
+                unfocusedContainerColor = Color.Transparent
+            )
         )
 
         Spacer(modifier = Modifier.height(8.dp))
 
         DisplayLangSpinner()
 
-        Spacer(modifier = Modifier.height(8.dp))
-
-        DisplayProficiencySpinner()
-
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(32.dp))
 
         Button(onClick = {
             if (email.isEmpty() || password.isEmpty()) {
@@ -123,7 +177,7 @@ fun SignupScreen(modifier: Modifier = Modifier, navController: NavController) {
                 val queue = Volley.newRequestQueue(context)
                 val url = "https://gaston-distant-unamicably.ngrok-free.dev/signup"
 
-                val user = User(email, password, proficiency, targetLanguage, 0, 0, ArrayList(), mutableMapOf())
+                val user = User(email, password,  targetLanguage, 0, 0, ArrayList(), mutableMapOf())
                 val userJsonBody = gson.toJson(user)
 
                 val signUpRequest = JsonObjectRequest(Request.Method.POST, url, JSONObject(userJsonBody),
@@ -159,17 +213,47 @@ fun SignupScreen(modifier: Modifier = Modifier, navController: NavController) {
                     })
                 queue.add(signUpRequest)
             }
-//            authViewModel.signup(email, password)
-        }) {
-            Text(text = "Create account")
+        },
+            shape = MaterialTheme.shapes.large,
+            colors = ButtonDefaults.buttonColors(
+                containerColor = colorResource(R.color.rosetta_yellow)
+            ),
+            modifier = Modifier
+                .height(50.dp))
+        {
+            Text(text = "Sign Up",
+                style = TextStyle(
+                    fontSize = 22.sp,
+                    fontWeight = FontWeight(500),
+                    color = Color.White
+                )
+            )
         }
 
         Spacer(modifier = Modifier.height(8.dp))
 
-        TextButton(onClick = {
-            navController.navigate("login")
-        }) {
-            Text(text = "Already have an account? Login")
+        Row(
+            modifier = Modifier.padding(top=12.dp, bottom = 80.dp)
+        ) {
+            Text(
+                "Already have an account? ",
+                style = TextStyle(
+                    fontSize = 18.sp,
+                    color = Color.White
+                )
+            )
+
+            Text(
+                "Login",
+                style = TextStyle(
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight(800),
+                    color = Color.White
+                ),
+                modifier = Modifier.clickable {
+                    navController.navigate("login")
+                }
+            )
         }
     }
 }
@@ -177,11 +261,28 @@ fun SignupScreen(modifier: Modifier = Modifier, navController: NavController) {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DisplayLangSpinner() {
-    val parentOptions = listOf("German","French","Spanish","Vietnamese","Mandarin Chinese","Arabic","Hindi","Korean","Japanese","Russian","Swedish","Finnish","Polish","Italian","Dutch",)
+    val parentOptions = listOf(
+        "German",
+        "French",
+        "Spanish",
+        "Vietnamese",
+        "Mandarin Chinese",
+        "Arabic",
+        "Hindi",
+        "Korean",
+        "Japanese",
+        "Russian",
+        "Swedish",
+        "Finnish",
+        "Polish",
+        "Italian",
+        "Dutch",
+    )
     var expandedState by remember { mutableStateOf(false) }
     var selectedOption by remember { mutableStateOf(parentOptions[0]) }
 
-    ExposedDropdownMenuBox(expanded = expandedState,
+    ExposedDropdownMenuBox(
+        expanded = expandedState,
         onExpandedChange = { expandedState = !expandedState }) {
 
         TextField(
@@ -191,13 +292,21 @@ fun DisplayLangSpinner() {
             modifier = Modifier.menuAnchor(),
             trailingIcon = {
                 ExposedDropdownMenuDefaults.TrailingIcon(expanded = expandedState)
-            })
+            },
+            colors = TextFieldDefaults.colors(
+                focusedContainerColor = Color.Transparent,
+                focusedIndicatorColor = colorResource(R.color.rosetta_yellow),
+                focusedLabelColor = colorResource(R.color.rosetta_yellow),
+                focusedTextColor = Color.White,
+                unfocusedContainerColor = Color.Transparent
+            )
+        )
 
-        ExposedDropdownMenu(expanded = expandedState,
+        ExposedDropdownMenu(
+            expanded = expandedState,
             onDismissRequest = { expandedState = false }) {
 
-            parentOptions.forEach {
-                item ->
+            parentOptions.forEach { item ->
                 DropdownMenuItem(text = {
                     Text(text = item)
                 }, onClick = {
@@ -210,38 +319,3 @@ fun DisplayLangSpinner() {
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun DisplayProficiencySpinner() {
-    val parentOptions = listOf("Beginner","Intermediate","Advanced")
-    var expandedState by remember { mutableStateOf(false) }
-    var selectedOption by remember { mutableStateOf(parentOptions[0]) }
-
-    ExposedDropdownMenuBox(expanded = expandedState,
-        onExpandedChange = { expandedState = !expandedState }) {
-
-        TextField(
-            value = selectedOption,
-            onValueChange = {},
-            readOnly = true,
-            modifier = Modifier.menuAnchor(),
-            trailingIcon = {
-                ExposedDropdownMenuDefaults.TrailingIcon(expanded = expandedState)
-            })
-
-        ExposedDropdownMenu(expanded = expandedState,
-            onDismissRequest = { expandedState = false }) {
-
-            parentOptions.forEach {
-                    item ->
-                DropdownMenuItem(text = {
-                    Text(text = item)
-                }, onClick = {
-                    selectedOption = item
-                    expandedState = false
-                    proficiency = selectedOption
-                })
-            }
-        }
-    }
-}

@@ -69,6 +69,7 @@ dependencies {
     implementation(libs.androidx.ui.graphics)
     implementation(libs.material)
     implementation(libs.androidx.activity)
+    implementation(libs.androidx.recyclerview)
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
@@ -87,4 +88,5 @@ dependencies {
     implementation(libs.retrofit.converter.gson)
     implementation("com.moizhassan.ffmpeg:ffmpeg-kit-16kb:6.1.1")
     implementation("com.android.volley:volley:1.2.1")
+    implementation("com.github.PhilJay:MPAndroidChart:v3.1.0")
 }

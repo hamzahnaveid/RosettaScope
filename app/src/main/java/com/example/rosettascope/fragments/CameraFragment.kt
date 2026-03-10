@@ -54,6 +54,7 @@ import com.example.rosettascope.adapters.ScoreRecyclerViewAdapter
 import com.example.rosettascope.ar.OverlayView
 import com.example.rosettascope.databinding.FragmentCameraBinding
 import com.example.rosettascope.helpers.ObjectDetectorHelper
+import com.example.rosettascope.helpers.ScoreRequest
 import com.example.rosettascope.models.Score
 import com.example.rosettascope.models.User
 import com.example.rosettascope.viewmodels.CameraViewModel
@@ -531,7 +532,7 @@ class CameraFragment : Fragment(), ObjectDetectorHelper.DetectorListener {
             .setTitle("Pronunciation Assessment")
             .setView(view)
             .setNegativeButton("Continue", DialogInterface.OnClickListener() { dialog, _ ->
-                saveScoreToDB(fullTranslation, pronScore, newConfidenceMastered)
+                saveScoreToDB(fullTranslation, pronScore, newConfidenceMastered, feedback)
                 dialog.dismiss()
             })
             .create()
@@ -549,7 +550,17 @@ class CameraFragment : Fragment(), ObjectDetectorHelper.DetectorListener {
             } catch (e: JSONException) {
                 0
             }
-            scores.add(Score(null, word, user!!.targetLanguage, score))
+            scores.add(
+                Score(
+                    null,
+                    word,
+                    user!!.targetLanguage,
+                    score,
+                    currentWord,
+                    System.currentTimeMillis(),
+                    ""
+                )
+            )
         }
         return scores
     }
@@ -665,13 +676,24 @@ class CameraFragment : Fragment(), ObjectDetectorHelper.DetectorListener {
         queue.add(getUserRequest)
     }
 
-    private fun saveScoreToDB(word: String, score: Int, confidenceScore: Double) {
+    private fun saveScoreToDB(word: String, score: Int, confidenceScore: Double, feedback: String) {
         val gson = Gson()
-        val queue = Volley.newRequestQueue(context);
-        val url = "https://gaston-distant-unamicably.ngrok-free.dev/user-save"
+        val queue = Volley.newRequestQueue(context)
+        val url = "https://gaston-distant-unamicably.ngrok-free.dev/add-score"
 
-        val userScore = Score(null, word, user!!.targetLanguage, score)
-         user!!.scores.add(userScore)
+        val scoreRequest = ScoreRequest(
+            user!!.email,
+            word,
+            user!!.targetLanguage,
+            score,
+            currentWord,
+            System.currentTimeMillis(),
+            feedback,
+            confidenceScore
+        )
+
+        val userScore = Score(null, word, user!!.targetLanguage, score, currentWord, System.currentTimeMillis(), feedback)
+        user!!.scores.add(userScore)
 
         if (!user!!.confidenceScores.contains(currentWord)) {
             user!!.wordsEncountered += 1
@@ -682,10 +704,10 @@ class CameraFragment : Fragment(), ObjectDetectorHelper.DetectorListener {
         }
         user!!.confidenceScores.put(currentWord, confidenceScore)
 
-        val userJsonBody = gson.toJson(user)
+        val json = JSONObject(gson.toJson(scoreRequest))
 
-        val saveUserRequest = JsonObjectRequest(
-            Request.Method.POST, url, JSONObject(userJsonBody),
+        val saveScoreRequest = JsonObjectRequest(
+            Request.Method.POST, url, json,
             { response ->
                 Toast.makeText(
                     context,
@@ -693,9 +715,9 @@ class CameraFragment : Fragment(), ObjectDetectorHelper.DetectorListener {
                     Toast.LENGTH_SHORT
                 )
                     .show()
-                Log.d("JavaDB", "User saved")
+                Log.d("JavaDB", "Score saved")
             }, {
-                error ->
+                    error ->
                 Toast.makeText(
                     context,
                     "Error connecting to server",
@@ -704,6 +726,6 @@ class CameraFragment : Fragment(), ObjectDetectorHelper.DetectorListener {
                     .show()
                 Log.e("VolleyRequest", error.toString())
             })
-        queue.add(saveUserRequest)
+        queue.add(saveScoreRequest)
     }
 }

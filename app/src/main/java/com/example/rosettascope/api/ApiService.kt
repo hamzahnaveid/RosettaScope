@@ -29,10 +29,22 @@ data class GradingResponse(
     val new_confidence_mastered: Double
 )
 
-interface TranslationApiService {
+data class FeedbackRequest(
+    val feedbackJsonArray: String
+)
+
+data class FeedbackResponse(
+    val feedback: String
+)
+
+
+interface ApiService {
     @POST("/translate")
     suspend fun translateWord(@Body request: TranslationRequest): TranslationResponse
 
     @POST("/grade")
     suspend fun gradeSpeech(@Body request: GradingRequest): GradingResponse
+
+    @POST("/feedback")
+    suspend fun getFeedback(@Body request: FeedbackRequest): FeedbackResponse
 }
