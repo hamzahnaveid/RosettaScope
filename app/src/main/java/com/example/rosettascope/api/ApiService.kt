@@ -38,7 +38,7 @@ data class FeedbackResponse(
 )
 
 
-interface TranslationApiService {
+interface ApiService {
     @POST("/translate")
     suspend fun translateWord(@Body request: TranslationRequest): TranslationResponse
 

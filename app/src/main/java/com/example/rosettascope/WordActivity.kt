@@ -1,11 +1,13 @@
 package com.example.rosettascope
 
+import android.app.AlertDialog
 import android.content.Context
 import android.os.Bundle
 import android.util.Log
 import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
@@ -16,6 +18,7 @@ import com.android.volley.toolbox.Volley
 import com.example.rosettascope.helpers.LineChartXAxisValueFormatter
 import com.example.rosettascope.models.Score
 import com.example.rosettascope.models.User
+import com.example.rosettascope.viewmodels.FeedbackViewModel
 import com.github.mikephil.charting.charts.LineChart
 import com.github.mikephil.charting.components.LimitLine
 import com.github.mikephil.charting.components.XAxis
@@ -23,8 +26,11 @@ import com.github.mikephil.charting.data.Entry
 import com.github.mikephil.charting.data.LineData
 import com.github.mikephil.charting.data.LineDataSet
 import com.google.gson.Gson
+import org.json.JSONArray
 
 class WordActivity : AppCompatActivity() {
+
+    val feedbackViewModel: FeedbackViewModel by viewModels()
 
     private var user: User? = null
     private var userRetrieved = false
@@ -46,6 +52,7 @@ class WordActivity : AppCompatActivity() {
         val chart = findViewById<LineChart>(R.id.line_chart)
         chart.xAxis.valueFormatter = LineChartXAxisValueFormatter()
 
+        observeFeedbackViewModel()
         retrieveUserAndPopulateChart(email, chart)
     }
 
@@ -65,6 +72,8 @@ class WordActivity : AppCompatActivity() {
 
                 val tvWord = findViewById<TextView>(R.id.textView_word_display)
                 setTextViewToTranslation(word!!, user!!.targetLanguage.toString(), tvWord)
+
+                retrieveFeedback()
             },
             { error ->
                 Toast.makeText(
@@ -112,7 +121,7 @@ class WordActivity : AppCompatActivity() {
         return wordScores
     }
 
-    fun setTextViewToTranslation(word: String, targetLanguage: String, textView: TextView) {
+    private fun setTextViewToTranslation(word: String, targetLanguage: String, textView: TextView) {
         val queue = Volley.newRequestQueue(this)
         val url = "https://subopaquely-unirradiative-bradley.ngrok-free.dev/translate-to-target/${word}/${targetLanguage}"
 
@@ -132,6 +141,38 @@ class WordActivity : AppCompatActivity() {
             })
         queue.add(translateWordRequest)
 
+    }
+
+    private fun retrieveFeedback() {
+        val feedbackList = mutableListOf<String>()
+
+        for (i in 0 until user!!.scores.size) {
+            val score = user!!.scores[i]
+            if (score.engWord == word) {
+                feedbackList.add(score.feedback)
+            }
+        }
+
+        val jsonArray = JSONArray(feedbackList)
+        val feedbackJsonArray = jsonArray.toString()
+
+        feedbackViewModel.getFeedback(feedbackJsonArray)
+    }
+
+    private fun observeFeedbackViewModel() {
+        feedbackViewModel.feedbackResult.observe(this) { response ->
+            val tvFeedback = findViewById<TextView>(R.id.textView_feedback_display)
+            Log.d("OllamaFeedback", response.feedback)
+            tvFeedback.text = response.feedback
+        }
+
+        feedbackViewModel.errorMessage.observe(this) { error ->
+            AlertDialog.Builder(this)
+                .setTitle("Error")
+                .setMessage(error ?: "Unknown error")
+                .setPositiveButton("OK", null)
+                .show()
+        }
     }
 
 }
