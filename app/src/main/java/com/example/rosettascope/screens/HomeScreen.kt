@@ -1,6 +1,7 @@
 package com.example.rosettascope.screens
 
 import android.annotation.SuppressLint
+import android.content.Context
 import android.content.Intent
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
@@ -32,6 +33,12 @@ import com.example.rosettascope.WordBankActivity
 
 @Composable
 fun HomeScreen(modifier: Modifier = Modifier) {
+    Image(painter = painterResource(id = R.drawable.bg_home),
+        contentDescription = "Background",
+        contentScale = ContentScale.FillBounds,
+        modifier = modifier.fillMaxSize()
+    )
+
     Column(
         modifier = modifier
             .fillMaxSize()
@@ -57,7 +64,7 @@ fun UserGreeting() {
             .height(40.dp)
         ) {
             Text(text = "Hello!",
-                color = Color.Black,
+                color = Color.White,
                 fontSize = 20.sp,
                 fontWeight = FontWeight.SemiBold
             )
@@ -82,7 +89,7 @@ fun StreakDisplay() {
             .padding(top = 34.dp)
         ) {
             Text(text = "0",
-                color = Color.Black,
+                color = Color.White,
                 fontSize = 20.sp,
                 fontWeight = FontWeight.SemiBold
             )
@@ -95,6 +102,14 @@ fun StreakDisplay() {
 fun ActivityButtons() {
     val context = LocalContext.current
 
+    DiscoverButton(context)
+    ChallengeButton(context)
+    WordBankButton(context)
+    ReviseButton(context)
+}
+
+@Composable
+fun DiscoverButton(context: Context) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -115,7 +130,10 @@ fun ActivityButtons() {
             contentScale = ContentScale.Crop
         )
     }
+}
 
+@Composable
+fun ChallengeButton(context: Context) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -127,16 +145,18 @@ fun ActivityButtons() {
                 .clip(RoundedCornerShape(20.dp))
                 .clickable(
                     onClick = {
-//                        val intent = Intent(context, ChallengeActivity::class.java)
-//                        context.startActivity(intent)
+
                     }
                 ),
             painter = painterResource(id = R.drawable.challenge_dartboard),
-            contentDescription = "Discover",
+            contentDescription = "Challenge",
             contentScale = ContentScale.Crop
         )
     }
+}
 
+@Composable
+fun WordBankButton(context: Context) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -153,11 +173,14 @@ fun ActivityButtons() {
                     }
                 ),
             painter = painterResource(id = R.drawable.wordbank_book),
-            contentDescription = "Discover",
+            contentDescription = "Word Bank",
             contentScale = ContentScale.Crop
         )
     }
+}
 
+@Composable
+fun ReviseButton(context: Context) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -169,12 +192,12 @@ fun ActivityButtons() {
                 .clip(RoundedCornerShape(20.dp))
                 .clickable(
                     onClick = {
-//                        val intent = Intent(context, StatisticsActivity::class.java)
+//                        val intent = Intent(context, ReviseActivity::class.java)
 //                        context.startActivity(intent)
                     }
                 ),
             painter = painterResource(id = R.drawable.progress_ladder),
-            contentDescription = "Discover",
+            contentDescription = "Revise",
             contentScale = ContentScale.Crop
         )
     }
