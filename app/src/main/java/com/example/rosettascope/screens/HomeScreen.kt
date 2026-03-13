@@ -28,6 +28,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.rosettascope.CameraActivity
+import com.example.rosettascope.ChallengeActivity
 import com.example.rosettascope.R
 import com.example.rosettascope.WordBankActivity
 
@@ -145,7 +146,8 @@ fun ChallengeButton(context: Context) {
                 .clip(RoundedCornerShape(20.dp))
                 .clickable(
                     onClick = {
-
+                        val intent = Intent(context, ChallengeActivity::class.java)
+                        context.startActivity(intent)
                     }
                 ),
             painter = painterResource(id = R.drawable.challenge_dartboard),

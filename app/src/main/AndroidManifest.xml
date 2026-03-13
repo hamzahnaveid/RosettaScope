@@ -25,6 +25,15 @@
         android:theme="@style/Theme.RosettaScope"
         android:usesCleartextTraffic="true">
         <activity
+            android:name=".ScavengerHuntActivity"
+            android:exported="false" />
+        <activity
+            android:name=".KnowledgeTestActivity"
+            android:exported="false" />
+        <activity
+            android:name=".ChallengeActivity"
+            android:exported="false" />
+        <activity
             android:name=".WordActivity"
             android:exported="false" />
         <activity
