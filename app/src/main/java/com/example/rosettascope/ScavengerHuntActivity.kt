@@ -31,9 +31,9 @@ class ScavengerHuntActivity : AppCompatActivity() {
         val intent = Intent(this, CameraActivity::class.java)
         val bundle = Bundle()
         when (button.id) {
-            R.id.button_option_home -> bundle.putString("location", "home")
+            R.id.button_option_home -> bundle.putString("location", "inside")
             R.id.button_option_outside -> bundle.putString("location", "outside")
-            R.id.button_option_other -> bundle.putString("location", "other")
+            R.id.button_option_other -> bundle.putString("location", "all")
         }
         intent.putExtras(bundle)
         startActivity(intent)

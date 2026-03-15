@@ -48,6 +48,7 @@ import androidx.navigation.Navigation
 import androidx.recyclerview.widget.RecyclerView
 import com.android.volley.Request
 import com.android.volley.toolbox.JsonObjectRequest
+import com.android.volley.toolbox.StringRequest
 import com.android.volley.toolbox.Volley
 import com.example.rosettascope.R
 import com.example.rosettascope.adapters.ScoreRecyclerViewAdapter
@@ -90,6 +91,9 @@ class CameraFragment : Fragment(), ObjectDetectorHelper.DetectorListener {
 
     private var mediaPlayer: MediaPlayer? = null
     private var mediaRecorder: MediaRecorder? = null
+
+    private var challengeWordBank = mutableMapOf<String, Boolean>()
+    private var challengeActive = false
 
     private lateinit var objectDetectorHelper: ObjectDetectorHelper
 
@@ -179,6 +183,14 @@ class CameraFragment : Fragment(), ObjectDetectorHelper.DetectorListener {
             ?.getString("email", "").toString()
         retrieveUser(email)
 
+        val bundle = activity?.intent?.extras
+        val challengeCategory: String? = bundle?.getString("location")
+
+        if (challengeCategory != null) {
+            challengeActive = true
+            retrieveChallengeWordBank(challengeCategory)
+        }
+
         // Initialize our background executor
         backgroundExecutor = Executors.newSingleThreadExecutor()
 
@@ -214,6 +226,13 @@ class CameraFragment : Fragment(), ObjectDetectorHelper.DetectorListener {
                 }
                 translationViewModel.translateWord(word, user!!.targetLanguage.toString(), confidenceScore)
                 showTranslationLoadingDialog(word)
+
+                if (challengeActive) {
+                    challengeWordBank[word] = true
+                    if (challengeWordBank.all({ true })) {
+                        Log.d("Challenge", "Challenge Complete")
+                    }
+                }
             }
         })
 
@@ -727,5 +746,30 @@ class CameraFragment : Fragment(), ObjectDetectorHelper.DetectorListener {
                 Log.e("VolleyRequest", error.toString())
             })
         queue.add(saveScoreRequest)
+    }
+
+    fun retrieveChallengeWordBank(category: String) {
+        val gson = Gson()
+        val queue = Volley.newRequestQueue(context)
+        val url = "https://gaston-distant-unamicably.ngrok-free.dev/get-challenge-word-bank/$category"
+
+        val getWordBankRequest = StringRequest(
+            Request.Method.GET, url,
+            { response ->
+                val json = response.toString()
+                val wordBank: List<String> = gson.fromJson(json, Array<String>::class.java).toList()
+                challengeWordBank.putAll(wordBank.associateWith { false })
+                Log.d("JavaDB", challengeWordBank.toString())
+            },
+            { error ->
+                Toast.makeText(
+                    context,
+                    "Error connecting to server",
+                    Toast.LENGTH_SHORT
+                )
+                    .show()
+                Log.e("VolleyRequest", error.toString())
+            })
+        queue.add(getWordBankRequest)
     }
 }
