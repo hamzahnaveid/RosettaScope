@@ -153,6 +153,10 @@ fun LoginScreen(modifier: Modifier = Modifier, navController: NavController) {
                             context.getSharedPreferences("USER", Context.MODE_PRIVATE)
                                 .edit().putString("email", email).apply()
 
+                            val targetLanguage = response.getString("target_language")
+                            context.getSharedPreferences("USER", Context.MODE_PRIVATE)
+                                .edit().putString("target_language", targetLanguage).apply()
+
                             Toast.makeText(
                                 context,
                                 "Logged in successfully",

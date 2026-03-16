@@ -40,8 +40,7 @@
                 android:background="@drawable/bg_text"
                 android:text="Home | School | Work"
                 android:textAllCaps="false"
-                android:textSize="20sp"
-                android:textStyle="bold" />
+                android:textSize="20sp" />
 
             <Button
                 android:id="@+id/button_option_outside"
@@ -53,8 +52,7 @@
                 android:background="@drawable/bg_text"
                 android:text="City | Park | Beach"
                 android:textAllCaps="false"
-                android:textSize="20sp"
-                android:textStyle="bold" />
+                android:textSize="20sp" />
 
             <Button
                 android:id="@+id/button_option_other"
@@ -66,8 +64,7 @@
                 android:background="@drawable/bg_text"
                 android:text="Somewhere else"
                 android:textAllCaps="false"
-                android:textSize="20sp"
-                android:textStyle="bold" />
+                android:textSize="20sp" />
 
         </LinearLayout>
     </androidx.cardview.widget.CardView>

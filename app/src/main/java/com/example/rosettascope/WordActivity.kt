@@ -136,7 +136,6 @@ class WordActivity : AppCompatActivity() {
                 Log.e("VolleyRequest", error.toString())
             })
         queue.add(translateWordRequest)
-
     }
 
     private fun retrieveFeedback() {

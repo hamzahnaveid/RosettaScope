@@ -16,6 +16,7 @@
 -->
 <androidx.coordinatorlayout.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/camera_container"
     android:layout_width="match_parent"
     android:layout_height="match_parent">
@@ -24,12 +25,64 @@
         android:id="@+id/view_finder"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        app:scaleType="fillStart"/>
+        app:scaleType="fillStart">
+
+    </androidx.camera.view.PreviewView>
 
     <com.example.rosettascope.ar.OverlayView
         android:id="@+id/overlay"
-        android:layout_height="match_parent"
         android:layout_width="match_parent"
+        android:layout_height="match_parent"
         android:clickable="true"
-        android:focusable="true"/>
+        android:focusable="true" />
+
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        android:id="@+id/floatingActionButton_hints"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_margin="24dp"
+        android:clickable="true"
+        android:src="@drawable/hints"
+        app:tint="@null"
+        android:visibility="gone"
+        app:backgroundTint="@color/rosetta_blue"
+        app:fabCustomSize="60dp"
+        app:fabSize="auto"
+        app:layout_anchor="@+id/view_finder"
+        app:layout_anchorGravity="bottom|end"
+        app:maxImageSize="50dp" />
+
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        android:id="@+id/floatingActionButton_list"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginEnd="100dp"
+        android:layout_marginBottom="24dp"
+        android:clickable="true"
+        android:src="@drawable/list"
+        app:tint="@null"
+        android:visibility="gone"
+        app:backgroundTint="@color/rosetta_blue"
+        app:fabCustomSize="60dp"
+        app:fabSize="auto"
+        app:layout_anchor="@+id/view_finder"
+        app:layout_anchorGravity="bottom|center|end"
+        app:maxImageSize="40dp" />
+
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        android:id="@+id/floatingActionButton_continue"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_margin="24dp"
+        android:clickable="true"
+        android:src="@drawable/right_arrow"
+        app:tint="@null"
+        android:visibility="gone"
+        app:backgroundTint="@color/rosetta_yellow"
+        app:fabCustomSize="60dp"
+        app:fabSize="auto"
+        app:layout_anchor="@+id/view_finder"
+        app:layout_anchorGravity="start|bottom"
+        app:maxImageSize="40dp" />
+
 </androidx.coordinatorlayout.widget.CoordinatorLayout>

@@ -93,6 +93,7 @@ class CameraFragment : Fragment(), ObjectDetectorHelper.DetectorListener {
     private var mediaRecorder: MediaRecorder? = null
 
     private var challengeWordBank = mutableMapOf<String, Boolean>()
+    private var challengeTranslatedWords = mutableListOf<String>()
     private var challengeActive = false
 
     private lateinit var objectDetectorHelper: ObjectDetectorHelper
@@ -187,6 +188,17 @@ class CameraFragment : Fragment(), ObjectDetectorHelper.DetectorListener {
         val challengeCategory: String? = bundle?.getString("location")
 
         if (challengeCategory != null) {
+            val fabHint = fragmentCameraBinding.floatingActionButtonHints
+            fabHint.visibility = View.VISIBLE
+            val fabList = fragmentCameraBinding.floatingActionButtonList
+            fabList.visibility = View.VISIBLE
+            val fabContinue = fragmentCameraBinding.floatingActionButtonContinue
+            fabContinue.visibility = View.VISIBLE
+
+            fabHint.setOnClickListener { showChallengeHintDialog() }
+            fabList.setOnClickListener { showChallengeListDialog() }
+            fabContinue.setOnClickListener { showChallengeContinueDialog() }
+
             challengeActive = true
             retrieveChallengeWordBank(challengeCategory)
         }
@@ -228,8 +240,12 @@ class CameraFragment : Fragment(), ObjectDetectorHelper.DetectorListener {
                 showTranslationLoadingDialog(word)
 
                 if (challengeActive) {
-                    challengeWordBank[word] = true
-                    if (challengeWordBank.all({ true })) {
+                    if (challengeWordBank.contains(word)) {
+                        challengeWordBank[word] = true
+                    }
+
+                    if (!challengeWordBank.values.contains(false)) {
+                        completeChallenge()
                         Log.d("Challenge", "Challenge Complete")
                     }
                 }
@@ -760,6 +776,8 @@ class CameraFragment : Fragment(), ObjectDetectorHelper.DetectorListener {
                 val wordBank: List<String> = gson.fromJson(json, Array<String>::class.java).toList()
                 challengeWordBank.putAll(wordBank.associateWith { false })
                 Log.d("JavaDB", challengeWordBank.toString())
+                populateTranslatedChallengeList(wordBank)
+                retrieveChallengeHints(wordBank)
             },
             { error ->
                 Toast.makeText(
@@ -772,4 +790,54 @@ class CameraFragment : Fragment(), ObjectDetectorHelper.DetectorListener {
             })
         queue.add(getWordBankRequest)
     }
+
+    fun populateTranslatedChallengeList(wordBank: List<String>) {
+        for (word in wordBank) {
+            translateChallengeWord(word)
+        }
+    }
+
+    fun translateChallengeWord(word: String) {
+        val targetLanguage = context?.getSharedPreferences("USER", Context.MODE_PRIVATE)
+            ?.getString("target_language", "").toString()
+
+        val queue = Volley.newRequestQueue(activity)
+        val url = "https://subopaquely-unirradiative-bradley.ngrok-free.dev/translate-to-target/${word}/${targetLanguage}"
+
+        val translateWordRequest = StringRequest(
+            Request.Method.GET, url,
+            { response ->
+                challengeTranslatedWords.add(response)
+                Log.d("Challenge", response)
+            },
+            { error ->
+                Toast.makeText(
+                    activity,
+                    "Error connecting to server",
+                    Toast.LENGTH_SHORT
+                )
+                    .show()
+                Log.e("VolleyRequest", error.toString())
+            })
+        queue.add(translateWordRequest)
+    }
+
+    fun retrieveChallengeHints(wordBank: List<String>) {
+
+    }
+
+    fun showChallengeHintDialog() {
+
+    }
+
+    fun showChallengeListDialog() {
+
+    }
+
+    fun showChallengeContinueDialog() {
+
+    }
+
+    fun completeChallenge() {}
+
 }
