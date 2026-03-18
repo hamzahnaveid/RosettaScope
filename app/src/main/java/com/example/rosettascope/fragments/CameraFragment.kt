@@ -20,6 +20,7 @@ import android.app.AlertDialog
 import android.content.Context
 import android.content.ContextWrapper
 import android.content.DialogInterface
+import android.content.Intent
 import android.content.res.Configuration
 import android.media.MediaPlayer
 import android.media.MediaRecorder
@@ -50,6 +51,7 @@ import com.android.volley.Request
 import com.android.volley.toolbox.JsonObjectRequest
 import com.android.volley.toolbox.StringRequest
 import com.android.volley.toolbox.Volley
+import com.example.rosettascope.HomeActivity
 import com.example.rosettascope.R
 import com.example.rosettascope.adapters.ChallengeWordsRecyclerViewAdapter
 import com.example.rosettascope.adapters.ScoreRecyclerViewAdapter
@@ -96,6 +98,7 @@ class CameraFragment : Fragment(), ObjectDetectorHelper.DetectorListener {
     private var challengeWordBank = mutableMapOf<String, Boolean>()
     private var challengeTranslatedWords = mutableMapOf<String, String>()
     private var challengeHints: String = "Loading hints..."
+    private var challengeCount: Int = 0
     private var challengeActive = false
 
     private lateinit var objectDetectorHelper: ObjectDetectorHelper
@@ -196,10 +199,12 @@ class CameraFragment : Fragment(), ObjectDetectorHelper.DetectorListener {
             fabList.visibility = View.VISIBLE
             val fabContinue = fragmentCameraBinding.floatingActionButtonContinue
             fabContinue.visibility = View.VISIBLE
+            val tvChallengeCounter = fragmentCameraBinding.textViewChallengeCounter
+            tvChallengeCounter.visibility = View.VISIBLE
 
             fabHint.setOnClickListener { showChallengeHintDialog() }
             fabList.setOnClickListener { showChallengeListDialog() }
-            fabContinue.setOnClickListener { showChallengeContinueDialog() }
+            fabContinue.setOnClickListener { completeChallenge() }
 
             challengeActive = true
             retrieveChallengeWordBank(challengeCategory)
@@ -242,11 +247,15 @@ class CameraFragment : Fragment(), ObjectDetectorHelper.DetectorListener {
                 showTranslationLoadingDialog(word)
 
                 if (challengeActive) {
-                    if (challengeWordBank.contains(word)) {
+                    if (challengeWordBank.contains(word) && challengeWordBank[word] == false) {
+                        challengeCount++
                         challengeWordBank[word] = true
+
+                        fragmentCameraBinding.textViewChallengeCounter.text = "${challengeCount}/5"
                     }
 
                     if (!challengeWordBank.values.contains(false)) {
+                        challengeActive = false
                         completeChallenge()
                         Log.d("Challenge", "Challenge Complete")
                     }
@@ -890,12 +899,25 @@ class CameraFragment : Fragment(), ObjectDetectorHelper.DetectorListener {
             .show()
     }
 
-    fun showChallengeContinueDialog() {
-
-    }
-
     fun completeChallenge() {
-
+        if (challengeActive) {
+            val dialog = AlertDialog.Builder(requireContext())
+                .setTitle("Quit Challenge?")
+                .setMessage("Are you sure you want to quit? You won't receive the full rewards.")
+                .setPositiveButton("Yes", DialogInterface.OnClickListener() { dialog, _ ->
+                    dialog.dismiss()
+                    val intent = Intent(context, HomeActivity::class.java)
+                    context?.startActivity(intent)
+                })
+                .setNegativeButton("No", DialogInterface.OnClickListener() { dialog, _ ->
+                    dialog.dismiss()
+                })
+                .create()
+                .show()
+            return
+        }
+        val intent = Intent(context, HomeActivity::class.java)
+        context?.startActivity(intent)
     }
 
 }

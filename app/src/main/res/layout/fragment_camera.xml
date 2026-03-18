@@ -85,4 +85,19 @@
         app:layout_anchorGravity="start|bottom"
         app:maxImageSize="40dp" />
 
+    <TextView
+        android:id="@+id/textView_challenge_counter"
+        android:layout_width="131dp"
+        android:layout_height="48dp"
+        android:layout_margin="16dp"
+        android:background="@drawable/bg_text"
+        android:gravity="center"
+        android:text="0/5"
+        android:textColor="@color/white"
+        android:textSize="18sp"
+        android:textStyle="bold"
+        android:visibility="gone"
+        app:layout_anchor="@+id/view_finder"
+        app:layout_anchorGravity="top|center" />
+
 </androidx.coordinatorlayout.widget.CoordinatorLayout>

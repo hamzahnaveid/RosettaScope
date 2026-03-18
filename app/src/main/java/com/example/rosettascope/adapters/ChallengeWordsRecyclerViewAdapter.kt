@@ -32,7 +32,10 @@ class ChallengeWordsRecyclerViewAdapter(
         val translateWordRequest = StringRequest(
             Request.Method.GET, url,
             { response ->
-                if (wordMap[response] == true) {
+                val translatedWord = response
+                    .replace("\"", "")
+                    .replace("\\", "")
+                if (wordMap[translatedWord.lowercase()] == true) {
                     holder.imgViewChallengeWordStatus.setImageResource(R.drawable.discovered)
                 }
                 Log.d("ChallengeRecyclerView", response)
@@ -48,7 +51,7 @@ class ChallengeWordsRecyclerViewAdapter(
             })
         queue.add(translateWordRequest)
 
-        holder.tvChallengeWord.text = word
+        holder.tvChallengeWord.text = word.replace("\"", "")
     }
 
     override fun getItemCount(): Int = translatedWords.size
