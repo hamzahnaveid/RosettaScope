@@ -51,6 +51,7 @@ import com.android.volley.toolbox.JsonObjectRequest
 import com.android.volley.toolbox.StringRequest
 import com.android.volley.toolbox.Volley
 import com.example.rosettascope.R
+import com.example.rosettascope.adapters.ChallengeWordsRecyclerViewAdapter
 import com.example.rosettascope.adapters.ScoreRecyclerViewAdapter
 import com.example.rosettascope.ar.OverlayView
 import com.example.rosettascope.databinding.FragmentCameraBinding
@@ -93,7 +94,8 @@ class CameraFragment : Fragment(), ObjectDetectorHelper.DetectorListener {
     private var mediaRecorder: MediaRecorder? = null
 
     private var challengeWordBank = mutableMapOf<String, Boolean>()
-    private var challengeTranslatedWords = mutableListOf<String>()
+    private var challengeTranslatedWords = mutableMapOf<String, String>()
+    private var challengeHints: String = "Loading hints..."
     private var challengeActive = false
 
     private lateinit var objectDetectorHelper: ObjectDetectorHelper
@@ -807,7 +809,7 @@ class CameraFragment : Fragment(), ObjectDetectorHelper.DetectorListener {
         val translateWordRequest = StringRequest(
             Request.Method.GET, url,
             { response ->
-                challengeTranslatedWords.add(response)
+                challengeTranslatedWords.put(word, response)
                 Log.d("Challenge", response)
             },
             { error ->
@@ -823,21 +825,77 @@ class CameraFragment : Fragment(), ObjectDetectorHelper.DetectorListener {
     }
 
     fun retrieveChallengeHints(wordBank: List<String>) {
+        val queue = Volley.newRequestQueue(activity)
+        var url = "https://subopaquely-unirradiative-bradley.ngrok-free.dev/scavenger-hunt?"
 
+        for (word in wordBank) {
+            url += "words=${word}&"
+        }
+
+        val translateWordRequest = StringRequest(
+            Request.Method.GET, url,
+            { response ->
+                challengeHints = response
+                Log.d("Challenge", response)
+            },
+            { error ->
+                Toast.makeText(
+                    activity,
+                    "Error connecting to server",
+                    Toast.LENGTH_SHORT
+                )
+                    .show()
+                Log.e("VolleyRequest", error.toString())
+            })
+        queue.add(translateWordRequest)
     }
 
     fun showChallengeHintDialog() {
+        val view = LayoutInflater.from(requireContext()).inflate(R.layout.dialog_challenge_hints, null)
 
+        val tvTranslated: TextView = view.findViewById(R.id.textView_hints)
+        val formatted = challengeHints
+            .replace("\\\\n", "\n")
+            .replace("\\n", "\n")
+            .replace("\"", "")
+        tvTranslated.text = formatted
+
+
+        val dialog = AlertDialog.Builder(requireContext())
+            .setTitle("Hints")
+            .setView(view)
+            .setNegativeButton("OK", DialogInterface.OnClickListener() { dialog, _ ->
+                dialog.dismiss()
+            })
+            .create()
+            .show()
     }
 
     fun showChallengeListDialog() {
+        val targetLanguage = context?.getSharedPreferences("USER", Context.MODE_PRIVATE)
+            ?.getString("target_language", "").toString()
 
+        val view = LayoutInflater.from(requireContext()).inflate(R.layout.dialog_challenge_list, null)
+
+        val rvChallengeWords: RecyclerView = view.findViewById(R.id.rv_challenge_words)
+        rvChallengeWords.adapter = ChallengeWordsRecyclerViewAdapter(challengeTranslatedWords.values.toList(), challengeWordBank, targetLanguage)
+
+        val dialog = AlertDialog.Builder(requireContext())
+            .setTitle("Scavenger Hunt List")
+            .setView(view)
+            .setNegativeButton("OK", DialogInterface.OnClickListener() { dialog, _ ->
+                dialog.dismiss()
+            })
+            .create()
+            .show()
     }
 
     fun showChallengeContinueDialog() {
 
     }
 
-    fun completeChallenge() {}
+    fun completeChallenge() {
+
+    }
 
 }

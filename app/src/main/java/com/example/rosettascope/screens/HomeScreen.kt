@@ -198,7 +198,7 @@ fun ReviseButton(context: Context) {
 //                        context.startActivity(intent)
                     }
                 ),
-            painter = painterResource(id = R.drawable.progress_ladder),
+            painter = painterResource(id = R.drawable.revise_glasses),
             contentDescription = "Revise",
             contentScale = ContentScale.Crop
         )

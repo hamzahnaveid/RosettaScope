@@ -124,7 +124,7 @@ class WordActivity : AppCompatActivity() {
         val translateWordRequest = StringRequest(
             Request.Method.GET, url,
             { response ->
-                textView.text = response
+                textView.text = response.replace("\"", "")
             },
             { error ->
                 Toast.makeText(
