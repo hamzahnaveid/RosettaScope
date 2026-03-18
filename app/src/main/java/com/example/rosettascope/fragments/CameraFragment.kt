@@ -20,6 +20,7 @@ import android.app.AlertDialog
 import android.content.Context
 import android.content.ContextWrapper
 import android.content.DialogInterface
+import android.content.Intent
 import android.content.res.Configuration
 import android.media.MediaPlayer
 import android.media.MediaRecorder
@@ -48,8 +49,11 @@ import androidx.navigation.Navigation
 import androidx.recyclerview.widget.RecyclerView
 import com.android.volley.Request
 import com.android.volley.toolbox.JsonObjectRequest
+import com.android.volley.toolbox.StringRequest
 import com.android.volley.toolbox.Volley
+import com.example.rosettascope.HomeActivity
 import com.example.rosettascope.R
+import com.example.rosettascope.adapters.ChallengeWordsRecyclerViewAdapter
 import com.example.rosettascope.adapters.ScoreRecyclerViewAdapter
 import com.example.rosettascope.ar.OverlayView
 import com.example.rosettascope.databinding.FragmentCameraBinding
@@ -90,6 +94,12 @@ class CameraFragment : Fragment(), ObjectDetectorHelper.DetectorListener {
 
     private var mediaPlayer: MediaPlayer? = null
     private var mediaRecorder: MediaRecorder? = null
+
+    private var challengeWordBank = mutableMapOf<String, Boolean>()
+    private var challengeTranslatedWords = mutableMapOf<String, String>()
+    private var challengeHints: String = "Loading hints..."
+    private var challengeCount: Int = 0
+    private var challengeActive = false
 
     private lateinit var objectDetectorHelper: ObjectDetectorHelper
 
@@ -179,6 +189,27 @@ class CameraFragment : Fragment(), ObjectDetectorHelper.DetectorListener {
             ?.getString("email", "").toString()
         retrieveUser(email)
 
+        val bundle = activity?.intent?.extras
+        val challengeCategory: String? = bundle?.getString("location")
+
+        if (challengeCategory != null) {
+            val fabHint = fragmentCameraBinding.floatingActionButtonHints
+            fabHint.visibility = View.VISIBLE
+            val fabList = fragmentCameraBinding.floatingActionButtonList
+            fabList.visibility = View.VISIBLE
+            val fabContinue = fragmentCameraBinding.floatingActionButtonContinue
+            fabContinue.visibility = View.VISIBLE
+            val tvChallengeCounter = fragmentCameraBinding.textViewChallengeCounter
+            tvChallengeCounter.visibility = View.VISIBLE
+
+            fabHint.setOnClickListener { showChallengeHintDialog() }
+            fabList.setOnClickListener { showChallengeListDialog() }
+            fabContinue.setOnClickListener { completeChallenge() }
+
+            challengeActive = true
+            retrieveChallengeWordBank(challengeCategory)
+        }
+
         // Initialize our background executor
         backgroundExecutor = Executors.newSingleThreadExecutor()
 
@@ -214,6 +245,21 @@ class CameraFragment : Fragment(), ObjectDetectorHelper.DetectorListener {
                 }
                 translationViewModel.translateWord(word, user!!.targetLanguage.toString(), confidenceScore)
                 showTranslationLoadingDialog(word)
+
+                if (challengeActive) {
+                    if (challengeWordBank.contains(word) && challengeWordBank[word] == false) {
+                        challengeCount++
+                        challengeWordBank[word] = true
+
+                        fragmentCameraBinding.textViewChallengeCounter.text = "${challengeCount}/5"
+                    }
+
+                    if (!challengeWordBank.values.contains(false)) {
+                        challengeActive = false
+                        completeChallenge()
+                        Log.d("Challenge", "Challenge Complete")
+                    }
+                }
             }
         })
 
@@ -728,4 +774,150 @@ class CameraFragment : Fragment(), ObjectDetectorHelper.DetectorListener {
             })
         queue.add(saveScoreRequest)
     }
+
+    fun retrieveChallengeWordBank(category: String) {
+        val gson = Gson()
+        val queue = Volley.newRequestQueue(context)
+        val url = "https://gaston-distant-unamicably.ngrok-free.dev/get-challenge-word-bank/$category"
+
+        val getWordBankRequest = StringRequest(
+            Request.Method.GET, url,
+            { response ->
+                val json = response.toString()
+                val wordBank: List<String> = gson.fromJson(json, Array<String>::class.java).toList()
+                challengeWordBank.putAll(wordBank.associateWith { false })
+                Log.d("JavaDB", challengeWordBank.toString())
+                populateTranslatedChallengeList(wordBank)
+                retrieveChallengeHints(wordBank)
+            },
+            { error ->
+                Toast.makeText(
+                    context,
+                    "Error connecting to server",
+                    Toast.LENGTH_SHORT
+                )
+                    .show()
+                Log.e("VolleyRequest", error.toString())
+            })
+        queue.add(getWordBankRequest)
+    }
+
+    fun populateTranslatedChallengeList(wordBank: List<String>) {
+        for (word in wordBank) {
+            translateChallengeWord(word)
+        }
+    }
+
+    fun translateChallengeWord(word: String) {
+        val targetLanguage = context?.getSharedPreferences("USER", Context.MODE_PRIVATE)
+            ?.getString("target_language", "").toString()
+
+        val queue = Volley.newRequestQueue(activity)
+        val url = "https://subopaquely-unirradiative-bradley.ngrok-free.dev/translate-to-target/${word}/${targetLanguage}"
+
+        val translateWordRequest = StringRequest(
+            Request.Method.GET, url,
+            { response ->
+                challengeTranslatedWords.put(word, response)
+                Log.d("Challenge", response)
+            },
+            { error ->
+                Toast.makeText(
+                    activity,
+                    "Error connecting to server",
+                    Toast.LENGTH_SHORT
+                )
+                    .show()
+                Log.e("VolleyRequest", error.toString())
+            })
+        queue.add(translateWordRequest)
+    }
+
+    fun retrieveChallengeHints(wordBank: List<String>) {
+        val queue = Volley.newRequestQueue(activity)
+        var url = "https://subopaquely-unirradiative-bradley.ngrok-free.dev/scavenger-hunt?"
+
+        for (word in wordBank) {
+            url += "words=${word}&"
+        }
+
+        val translateWordRequest = StringRequest(
+            Request.Method.GET, url,
+            { response ->
+                challengeHints = response
+                Log.d("Challenge", response)
+            },
+            { error ->
+                Toast.makeText(
+                    activity,
+                    "Error connecting to server",
+                    Toast.LENGTH_SHORT
+                )
+                    .show()
+                Log.e("VolleyRequest", error.toString())
+            })
+        queue.add(translateWordRequest)
+    }
+
+    fun showChallengeHintDialog() {
+        val view = LayoutInflater.from(requireContext()).inflate(R.layout.dialog_challenge_hints, null)
+
+        val tvTranslated: TextView = view.findViewById(R.id.textView_hints)
+        val formatted = challengeHints
+            .replace("\\\\n", "\n")
+            .replace("\\n", "\n")
+            .replace("\"", "")
+        tvTranslated.text = formatted
+
+
+        val dialog = AlertDialog.Builder(requireContext())
+            .setTitle("Hints")
+            .setView(view)
+            .setNegativeButton("OK", DialogInterface.OnClickListener() { dialog, _ ->
+                dialog.dismiss()
+            })
+            .create()
+            .show()
+    }
+
+    fun showChallengeListDialog() {
+        val targetLanguage = context?.getSharedPreferences("USER", Context.MODE_PRIVATE)
+            ?.getString("target_language", "").toString()
+
+        val view = LayoutInflater.from(requireContext()).inflate(R.layout.dialog_challenge_list, null)
+
+        val rvChallengeWords: RecyclerView = view.findViewById(R.id.rv_challenge_words)
+        rvChallengeWords.adapter = ChallengeWordsRecyclerViewAdapter(challengeTranslatedWords.values.toList(), challengeWordBank, targetLanguage)
+
+        val dialog = AlertDialog.Builder(requireContext())
+            .setTitle("Scavenger Hunt List")
+            .setView(view)
+            .setNegativeButton("OK", DialogInterface.OnClickListener() { dialog, _ ->
+                dialog.dismiss()
+            })
+            .create()
+            .show()
+    }
+
+    fun completeChallenge() {
+        if (challengeActive) {
+            val dialog = AlertDialog.Builder(requireContext())
+                .setTitle("Quit Challenge?")
+                .setMessage("Are you sure you want to quit? You won't receive the full rewards.")
+                .setPositiveButton("Yes", DialogInterface.OnClickListener() { dialog, _ ->
+                    dialog.dismiss()
+                    val intent = Intent(context, HomeActivity::class.java)
+                    context?.startActivity(intent)
+                })
+                .setNegativeButton("No", DialogInterface.OnClickListener() { dialog, _ ->
+                    dialog.dismiss()
+                })
+                .create()
+                .show()
+            return
+        }
+        val intent = Intent(context, HomeActivity::class.java)
+        context?.startActivity(intent)
+    }
+
 }

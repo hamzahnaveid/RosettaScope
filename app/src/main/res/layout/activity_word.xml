@@ -18,6 +18,7 @@
             android:id="@+id/textView_word_label"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
+            android:layout_marginTop="16dp"
             android:gravity="center"
             android:text="Word"
             android:textColor="@color/white"
@@ -26,13 +27,16 @@
 
         <TextView
             android:id="@+id/textView_word_display"
-            android:layout_width="match_parent"
-            android:layout_height="101dp"
+            android:layout_width="293dp"
+            android:layout_height="61dp"
+            android:layout_gravity="center_horizontal"
+            android:layout_margin="16dp"
             android:layout_weight="1"
+            android:background="@drawable/bg_text"
             android:gravity="center"
+            android:text="Loading translation..."
             android:textColor="@color/white"
-            android:textSize="24sp"
-            android:background="@drawable/bg_text"/>
+            android:textSize="24sp" />
 
         <TextView
             android:id="@+id/textView_chart_label"
@@ -54,6 +58,7 @@
             android:id="@+id/textView_feedback_label"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
+            android:layout_margin="16dp"
             android:gravity="center"
             android:text="Tips For Success"
             android:textColor="@color/white"

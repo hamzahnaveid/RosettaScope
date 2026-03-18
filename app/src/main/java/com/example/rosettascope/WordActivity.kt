@@ -124,7 +124,7 @@ class WordActivity : AppCompatActivity() {
         val translateWordRequest = StringRequest(
             Request.Method.GET, url,
             { response ->
-                textView.text = response
+                textView.text = response.replace("\"", "")
             },
             { error ->
                 Toast.makeText(
@@ -136,7 +136,6 @@ class WordActivity : AppCompatActivity() {
                 Log.e("VolleyRequest", error.toString())
             })
         queue.add(translateWordRequest)
-
     }
 
     private fun retrieveFeedback() {
