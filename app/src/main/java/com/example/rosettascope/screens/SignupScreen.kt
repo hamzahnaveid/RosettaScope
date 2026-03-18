@@ -189,6 +189,9 @@ fun SignupScreen(modifier: Modifier = Modifier, navController: NavController) {
                             context.getSharedPreferences("USER", Context.MODE_PRIVATE)
                                 .edit().putString("email", email).apply()
 
+                            context.getSharedPreferences("USER", Context.MODE_PRIVATE)
+                                .edit().putString("target_language", targetLanguage).apply()
+
                             Toast.makeText(
                                 context,
                                 "Account successfully created",

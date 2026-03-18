@@ -59,12 +59,17 @@
         android:id="@+id/imageView_arrow_to_word"
         android:layout_width="36dp"
         android:layout_height="37dp"
-        android:layout_marginStart="168dp"
         android:layout_marginTop="28dp"
+        android:layout_marginEnd="60dp"
+        android:layout_marginBottom="23dp"
         android:rotation="-90"
         android:visibility="visible"
-        app:layout_constraintStart_toEndOf="@+id/textView_word"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="1.0"
+        app:layout_constraintStart_toEndOf="@+id/imageView_word_status"
         app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintVertical_bias="1.0"
         app:srcCompat="@drawable/m3_split_button_chevron_avd" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/main"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:layout_gravity="center_vertical"
+    android:background="@drawable/bg_home"
+    android:gravity="center"
+    android:orientation="horizontal"
+    tools:context=".ChallengeActivity">
+
+    <ImageView
+        android:id="@+id/imageView_knowledgeTest"
+        android:layout_width="wrap_content"
+        android:layout_height="423dp"
+        android:layout_weight="1"
+        android:onClick="navKnowledgeTest"
+        android:src="@drawable/knowledge_test" />
+
+    <ImageView
+        android:id="@+id/imageView_searchWords"
+        android:layout_width="wrap_content"
+        android:layout_height="423dp"
+        android:layout_weight="1"
+        android:onClick="navScavengerHunt"
+        android:src="@drawable/scavenger_hunt" />
+</LinearLayout>
