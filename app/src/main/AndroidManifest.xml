@@ -25,6 +25,9 @@
         android:theme="@style/Theme.RosettaScope"
         android:usesCleartextTraffic="true">
         <activity
+            android:name=".KTQuestionsActivity"
+            android:exported="false" />
+        <activity
             android:name=".ScavengerHuntActivity"
             android:exported="false" />
         <activity
