@@ -25,6 +25,15 @@
         android:theme="@style/Theme.RosettaScope"
         android:usesCleartextTraffic="true">
         <activity
+            android:name=".TrainerActivity"
+            android:exported="false" />
+        <activity
+            android:name=".PainPointsActivity"
+            android:exported="false" />
+        <activity
+            android:name=".ReviseActivity"
+            android:exported="false" />
+        <activity
             android:name=".KTQuestionsActivity"
             android:exported="false" />
         <activity

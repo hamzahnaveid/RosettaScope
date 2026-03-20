@@ -30,6 +30,7 @@ import androidx.compose.ui.unit.sp
 import com.example.rosettascope.CameraActivity
 import com.example.rosettascope.ChallengeActivity
 import com.example.rosettascope.R
+import com.example.rosettascope.ReviseActivity
 import com.example.rosettascope.WordBankActivity
 
 @Composable
@@ -194,8 +195,8 @@ fun ReviseButton(context: Context) {
                 .clip(RoundedCornerShape(20.dp))
                 .clickable(
                     onClick = {
-//                        val intent = Intent(context, ReviseActivity::class.java)
-//                        context.startActivity(intent)
+                        val intent = Intent(context, ReviseActivity::class.java)
+                        context.startActivity(intent)
                     }
                 ),
             painter = painterResource(id = R.drawable.revise_glasses),
