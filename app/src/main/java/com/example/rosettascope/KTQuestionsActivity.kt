@@ -12,6 +12,7 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.PagerSnapHelper
 import androidx.recyclerview.widget.RecyclerView
 import com.android.volley.Request
 import com.android.volley.toolbox.JsonObjectRequest
@@ -21,6 +22,7 @@ import com.example.rosettascope.adapters.ChallengeQuestionsRecyclerViewAdapter
 import com.example.rosettascope.models.Score
 import com.example.rosettascope.models.User
 import com.google.gson.Gson
+import org.json.JSONObject
 
 class KTQuestionsActivity : AppCompatActivity() {
     var questionBank = listOf<Score>()
@@ -43,8 +45,7 @@ class KTQuestionsActivity : AppCompatActivity() {
         val tvTimer: TextView = findViewById(R.id.textView_challenge_timer)
         val timer = object : CountDownTimer(300000, 1000) {
             override fun onFinish() {
-                val intent = Intent(this@KTQuestionsActivity, HomeActivity::class.java)
-                startActivity(intent)
+                toResultScreen()
             }
 
             override fun onTick(millisUntilFinished: Long) {
@@ -111,17 +112,80 @@ class KTQuestionsActivity : AppCompatActivity() {
         queue.add(getUserRequest)
     }
 
+    fun saveUserProgress() {
+        val gson = Gson()
+        val queue = Volley.newRequestQueue(this)
+        val url = "https://gaston-distant-unamicably.ngrok-free.dev/save-progress"
+
+        val saveUserRequest = JsonObjectRequest(
+            Request.Method.POST, url, JSONObject(gson.toJson(user)),
+            { response ->
+                Log.d("JavaDB", "Progress saved")
+            },
+            { error ->
+                Toast.makeText(
+                    this,
+                    "Error connecting to server",
+                    Toast.LENGTH_SHORT
+                )
+                    .show()
+                Log.e("VolleyRequest", error.toString())
+            })
+        queue.add(saveUserRequest)
+    }
+
     fun setupRecyclerView() {
         val rvChallengeQuestion: RecyclerView = findViewById(R.id.rv_challenge_question)
         val tvChallengeQuestionCounter: TextView = findViewById(R.id.textView_challenge_qcounter)
         val progressBarChallenge: ProgressBar = findViewById(R.id.progressBar_challenge_qprogbar)
 
-        val adapter = ChallengeQuestionsRecyclerViewAdapter(questionBank, tvChallengeQuestionCounter, progressBarChallenge)
+        val adapter = ChallengeQuestionsRecyclerViewAdapter(questionBank,
+            tvChallengeQuestionCounter,
+            progressBarChallenge,
+            onNextClicked = { pos ->
+                val nextPos = pos + 1
+                if (nextPos < questionBank.size) {
+                    rvChallengeQuestion.smoothScrollToPosition(nextPos)
+                }
+            },
+            updateConfidenceScore = { answerData ->
+                val queue = Volley.newRequestQueue(this)
+                val url = "https://subopaquely-unirradiative-bradley.ngrok-free.dev/update-bkt-score-challenge/${user!!.confidenceScores[answerData.engWord]}/${answerData.correct}"
+
+                val checkAnswerRequest = StringRequest(
+                    Request.Method.GET, url,
+                    { response ->
+                        user!!.confidenceScores[answerData.engWord] = response.toDouble()
+                        Log.d("ChallengeRecyclerView", response)
+                    },
+                    { error ->
+                        Toast.makeText(
+                            this,
+                            "Error connecting to server",
+                            Toast.LENGTH_SHORT
+                        )
+                            .show()
+                        Log.e("VolleyRequest", error.toString())
+                    })
+                queue.add(checkAnswerRequest)
+            },
+            completeChallenge = {
+                toResultScreen()
+            }
+        )
         rvChallengeQuestion.adapter = adapter
 
         val layoutManager = LinearLayoutManager(this)
         layoutManager.orientation = LinearLayoutManager.HORIZONTAL
         rvChallengeQuestion.layoutManager = layoutManager
-        rvChallengeQuestion.setHasFixedSize(true)
+
+        val snapHelper = PagerSnapHelper()
+        snapHelper.attachToRecyclerView(rvChallengeQuestion)
+    }
+
+    fun toResultScreen() {
+        saveUserProgress()
+        val intent = Intent(this@KTQuestionsActivity, HomeActivity::class.java)
+        startActivity(intent)
     }
 }
