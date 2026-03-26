@@ -13,14 +13,17 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
@@ -55,15 +58,47 @@ fun HomeScreen(modifier: Modifier = Modifier) {
 
 @Composable
 fun UserGreeting() {
+    val targetLanguage = LocalContext.current.getSharedPreferences("USER", Context.MODE_PRIVATE)
+        .getString("target_language", "").toString()
+
+    var flagDrawable : Painter? = null
+
+    when (targetLanguage) {
+        "de-DE" -> flagDrawable = painterResource(R.drawable.germany)
+        "fr-FR" -> flagDrawable = painterResource(R.drawable.france)
+        "es-ES" -> flagDrawable = painterResource(R.drawable.spain)
+        "vi-VN" -> flagDrawable = painterResource(R.drawable.vietnam)
+        "zh-CN" -> flagDrawable = painterResource(R.drawable.china)
+        "ar-SA" -> flagDrawable = painterResource(R.drawable.saudi_arabia)
+        "hi-IN" -> flagDrawable = painterResource(R.drawable.india)
+        "ko-KR" -> flagDrawable = painterResource(R.drawable.south_korea)
+        "ja-JP" -> flagDrawable = painterResource(R.drawable.japan)
+        "ru-RU" -> flagDrawable = painterResource(R.drawable.russia)
+        "sv-SE" -> flagDrawable = painterResource(R.drawable.sweden)
+        "fi-FI" -> flagDrawable = painterResource(R.drawable.finland)
+        "pl-PL" -> flagDrawable = painterResource(R.drawable.poland)
+        "it-IT" -> flagDrawable = painterResource(R.drawable.italy)
+        "nl-NL" -> flagDrawable = painterResource(R.drawable.netherlands)
+        else -> flagDrawable = painterResource(R.drawable.undiscovered)
+    }
+
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .padding(top = 32.dp)
     ) {
+        Image(
+            modifier = Modifier
+                .width(55.dp)
+                .height(55.dp),
+            painter = flagDrawable as Painter,
+            contentDescription = "Target language flag")
+
         Box(modifier = Modifier
             .fillMaxWidth()
             .padding(start = 16.dp)
             .height(40.dp)
+            .align(alignment = Alignment.CenterVertically)
         ) {
             Text(text = "Hello!",
                 color = Color.White,
@@ -81,7 +116,9 @@ fun StreakDisplay() {
             .fillMaxWidth()
     ) {
         Image(
-            modifier = Modifier.size(55.dp),
+            modifier = Modifier
+                .size(55.dp)
+                .padding(top = 16.dp),
             //TODO get streak from server
             painter = painterResource(id = R.drawable.no_streak),
             contentDescription = "Streak badge")

@@ -35,6 +35,7 @@ class ChallengeQuestionsRecyclerViewAdapter(
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
         val view = LayoutInflater.from(parent.context).inflate(R.layout.recycler_view_challenge_question_item, parent, false)
         progressBar.max = itemCount
+        counter.text = (answerCount).toString() + "/" + itemCount.toString()
         return ViewHolder(view)
     }
 
