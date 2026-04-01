@@ -13,7 +13,10 @@ import androidx.core.view.WindowInsetsCompat
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.PagerSnapHelper
 import androidx.recyclerview.widget.RecyclerView
+import com.android.volley.NetworkResponse
 import com.android.volley.Request
+import com.android.volley.Response
+import com.android.volley.toolbox.HttpHeaderParser
 import com.android.volley.toolbox.JsonObjectRequest
 import com.android.volley.toolbox.StringRequest
 import com.android.volley.toolbox.Volley
@@ -50,7 +53,7 @@ class PPDrillsActivity : AppCompatActivity() {
         val queue = Volley.newRequestQueue(this)
         val url = "https://gaston-distant-unamicably.ngrok-free.dev/pain-points/$email"
 
-        val getPainPointsRequest = StringRequest(
+        val getPainPointsRequest = object : StringRequest(
             Request.Method.GET, url,
             { response ->
                 val json = response.toString()
@@ -67,7 +70,12 @@ class PPDrillsActivity : AppCompatActivity() {
                 )
                     .show()
                 Log.e("VolleyRequest", error.toString())
-            })
+            }) {
+            override fun parseNetworkResponse(response: NetworkResponse): Response<String> {
+                val utf8String = String(response.data, Charsets.UTF_8)
+                return Response.success(utf8String, HttpHeaderParser.parseCacheHeaders(response))
+            }
+        }
         queue.add(getPainPointsRequest)
     }
 

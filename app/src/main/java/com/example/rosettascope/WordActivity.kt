@@ -11,7 +11,10 @@ import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
+import com.android.volley.NetworkResponse
 import com.android.volley.Request
+import com.android.volley.Response
+import com.android.volley.toolbox.HttpHeaderParser
 import com.android.volley.toolbox.JsonObjectRequest
 import com.android.volley.toolbox.StringRequest
 import com.android.volley.toolbox.Volley
@@ -121,7 +124,7 @@ class WordActivity : AppCompatActivity() {
         val queue = Volley.newRequestQueue(this)
         val url = "https://subopaquely-unirradiative-bradley.ngrok-free.dev/translate-to-target/${word}/${targetLanguage}"
 
-        val translateWordRequest = StringRequest(
+        val translateWordRequest = object : StringRequest(
             Request.Method.GET, url,
             { response ->
                 textView.text = response.replace("\"", "")
@@ -134,7 +137,12 @@ class WordActivity : AppCompatActivity() {
                 )
                     .show()
                 Log.e("VolleyRequest", error.toString())
-            })
+            }) {
+            override fun parseNetworkResponse(response: NetworkResponse): Response<String> {
+                val utf8String = String(response.data, Charsets.UTF_8)
+                return Response.success(utf8String, HttpHeaderParser.parseCacheHeaders(response))
+            }
+        }
         queue.add(translateWordRequest)
     }
 
