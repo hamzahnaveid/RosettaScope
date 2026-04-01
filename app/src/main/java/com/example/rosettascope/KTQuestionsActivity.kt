@@ -22,7 +22,6 @@ import com.example.rosettascope.adapters.ChallengeQuestionsRecyclerViewAdapter
 import com.example.rosettascope.models.Score
 import com.example.rosettascope.models.User
 import com.google.gson.Gson
-import org.json.JSONObject
 
 class KTQuestionsActivity : AppCompatActivity() {
     var questionBank = listOf<Score>()
@@ -112,27 +111,27 @@ class KTQuestionsActivity : AppCompatActivity() {
         queue.add(getUserRequest)
     }
 
-    fun saveUserProgress() {
-        val gson = Gson()
-        val queue = Volley.newRequestQueue(this)
-        val url = "https://gaston-distant-unamicably.ngrok-free.dev/save-progress"
-
-        val saveUserRequest = JsonObjectRequest(
-            Request.Method.POST, url, JSONObject(gson.toJson(user)),
-            { response ->
-                Log.d("JavaDB", "Progress saved")
-            },
-            { error ->
-                Toast.makeText(
-                    this,
-                    "Error connecting to server",
-                    Toast.LENGTH_SHORT
-                )
-                    .show()
-                Log.e("VolleyRequest", error.toString())
-            })
-        queue.add(saveUserRequest)
-    }
+//    fun saveUserProgress() {
+//        val gson = Gson()
+//        val queue = Volley.newRequestQueue(this)
+//        val url = "https://gaston-distant-unamicably.ngrok-free.dev/save-progress"
+//
+//        val saveUserRequest = JsonObjectRequest(
+//            Request.Method.POST, url, JSONObject(gson.toJson(user)),
+//            { response ->
+//                Log.d("JavaDB", "Progress saved")
+//            },
+//            { error ->
+//                Toast.makeText(
+//                    this,
+//                    "Error connecting to server",
+//                    Toast.LENGTH_SHORT
+//                )
+//                    .show()
+//                Log.e("VolleyRequest", error.toString())
+//            })
+//        queue.add(saveUserRequest)
+//    }
 
     fun setupRecyclerView() {
         val rvChallengeQuestion: RecyclerView = findViewById(R.id.rv_challenge_question)
@@ -184,7 +183,7 @@ class KTQuestionsActivity : AppCompatActivity() {
     }
 
     fun toResultScreen() {
-        saveUserProgress()
+//        saveUserProgress()
         val intent = Intent(this@KTQuestionsActivity, HomeActivity::class.java)
         startActivity(intent)
     }
