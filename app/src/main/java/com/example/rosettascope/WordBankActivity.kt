@@ -8,12 +8,12 @@ import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
-import androidx.recyclerview.widget.RecyclerView
+import com.airbnb.epoxy.EpoxyRecyclerView
 import com.android.volley.Request
 import com.android.volley.toolbox.JsonObjectRequest
 import com.android.volley.toolbox.StringRequest
 import com.android.volley.toolbox.Volley
-import com.example.rosettascope.adapters.WordRecyclerViewAdapter
+import com.example.rosettascope.epoxy.WordEpoxyController
 import com.example.rosettascope.models.User
 import com.google.gson.Gson
 import org.json.JSONArray
@@ -21,7 +21,7 @@ import org.json.JSONArray
 class WordBankActivity : AppCompatActivity() {
     private var user: User? = null
     private val wordBank = mutableListOf<String>()
-    private var recyclerView: RecyclerView? = null
+    private var epoxyRecyclerView: EpoxyRecyclerView? = null
     private var userRetrieved = false
     private var wordBankRetrieved = false
 
@@ -34,7 +34,7 @@ class WordBankActivity : AppCompatActivity() {
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom)
             insets
         }
-        recyclerView = findViewById(R.id.rv_word_bank)
+        epoxyRecyclerView = findViewById(R.id.rv_word_bank)
 
         val email = applicationContext?.getSharedPreferences("USER", Context.MODE_PRIVATE)
             ?.getString("email", "").toString()
@@ -99,8 +99,9 @@ class WordBankActivity : AppCompatActivity() {
 
     private fun trySetupRecyclerView() {
         if (userRetrieved && wordBankRetrieved) {
-            val adapter = WordRecyclerViewAdapter(wordBank, user!!.confidenceScores)
-            recyclerView!!.adapter = adapter
+            val controller = WordEpoxyController()
+            epoxyRecyclerView!!.setController(controller)
+            controller.setData(wordBank, user!!.confidenceScores)
         }
     }
 }

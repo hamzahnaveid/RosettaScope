@@ -4,6 +4,7 @@ plugins {
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.google.gms.google.services)
     id("androidx.navigation.safeargs.kotlin")
+    id ("kotlin-kapt")
 }
 
 android {
@@ -39,6 +40,9 @@ android {
     buildFeatures {
         compose = true
         viewBinding = true
+    }
+    kapt {
+        correctErrorTypes = true
     }
 
 }
@@ -90,4 +94,8 @@ dependencies {
     implementation("com.moizhassan.ffmpeg:ffmpeg-kit-16kb:6.1.1")
     implementation("com.android.volley:volley:1.2.1")
     implementation("com.github.PhilJay:MPAndroidChart:v3.1.0")
+    implementation ("com.airbnb.android:epoxy:5.1.4")
+    implementation ("com.airbnb.android:epoxy-databinding:5.1.4")
+    implementation ("com.airbnb.android:epoxy-annotations:5.1.4")
+    kapt ("com.airbnb.android:epoxy-processor:5.1.4")
 }
