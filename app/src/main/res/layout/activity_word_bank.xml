@@ -6,12 +6,22 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@drawable/bg_home"
+    android:orientation="vertical"
     tools:context=".WordBankActivity">
+
+    <HorizontalScrollView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:scrollbars="none">
+
+        <include layout="@layout/view_word_filters"/>
+
+    </HorizontalScrollView>
 
     <com.airbnb.epoxy.EpoxyRecyclerView
         android:id="@+id/rv_word_bank"
         android:layout_width="409dp"
-        android:layout_height="729dp"
+        android:layout_height="wrap_content"
         app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"
         tools:layout_editor_absoluteX="1dp"
         tools:layout_editor_absoluteY="1dp"

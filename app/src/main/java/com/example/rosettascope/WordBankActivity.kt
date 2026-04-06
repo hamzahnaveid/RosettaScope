@@ -14,7 +14,11 @@ import com.android.volley.toolbox.JsonObjectRequest
 import com.android.volley.toolbox.StringRequest
 import com.android.volley.toolbox.Volley
 import com.example.rosettascope.epoxy.WordEpoxyController
+import com.example.rosettascope.helpers.WordFilter
+import com.example.rosettascope.helpers.getFilter
 import com.example.rosettascope.models.User
+import com.google.android.material.chip.Chip
+import com.google.android.material.chip.ChipGroup
 import com.google.gson.Gson
 import org.json.JSONArray
 
@@ -24,6 +28,7 @@ class WordBankActivity : AppCompatActivity() {
     private var epoxyRecyclerView: EpoxyRecyclerView? = null
     private var userRetrieved = false
     private var wordBankRetrieved = false
+    private var selectedFilter = WordFilter.ALL
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -35,6 +40,24 @@ class WordBankActivity : AppCompatActivity() {
             insets
         }
         epoxyRecyclerView = findViewById(R.id.rv_word_bank)
+
+        val cgFilters = findViewById<ChipGroup>(R.id.filterGroup)
+
+        cgFilters.setOnCheckedChangeListener { _, checkedId ->
+            val chip = findViewById<Chip>(checkedId)
+
+            selectedFilter = when (chip.text) {
+                "Undiscovered" -> WordFilter.UNDISCOVERED
+                "Beginner" -> WordFilter.BEGINNER
+                "Intermediate" -> WordFilter.INTERMEDIATE
+                "Advanced" -> WordFilter.ADVANCED
+                "Discovered" -> WordFilter.DISCOVERED
+                "Mastered" -> WordFilter.MASTERED
+                else -> WordFilter.ALL
+            }
+
+            trySetupRecyclerView()
+        }
 
         val email = applicationContext?.getSharedPreferences("USER", Context.MODE_PRIVATE)
             ?.getString("email", "").toString()
@@ -99,9 +122,25 @@ class WordBankActivity : AppCompatActivity() {
 
     private fun trySetupRecyclerView() {
         if (userRetrieved && wordBankRetrieved) {
+
+            val filteredWords = wordBank.filter { word ->
+                when (selectedFilter) {
+                    WordFilter.ALL -> true
+
+                    WordFilter.UNDISCOVERED ->
+                        !user!!.confidenceScores.containsKey(word)
+
+                    WordFilter.DISCOVERED ->
+                        user!!.confidenceScores.containsKey(word)
+
+                    else ->
+                        getFilter(word, user!!.confidenceScores) == selectedFilter
+                }
+            }
+
             val controller = WordEpoxyController()
             epoxyRecyclerView!!.setController(controller)
-            controller.setData(wordBank, user!!.confidenceScores)
+            controller.setData(filteredWords, user!!.confidenceScores)
         }
     }
 }

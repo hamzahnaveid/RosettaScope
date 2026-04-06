@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
 
-    <style name="Theme.RosettaScope" parent="Theme.AppCompat.Light.NoActionBar" />
+    <style name="Theme.RosettaScope" parent="Theme.MaterialComponents.Light.NoActionBar.Bridge" />
     <style name="Theme.RosettaScope.CameraActivity" parent="Theme.MaterialComponents.DayNight.NoActionBar"/>
 </resources>
