@@ -13,7 +13,8 @@ import com.example.rosettascope.models.Score
 
 class ChallengeDrillsRecyclerViewAdapter(
     private val drillBank: List<Score>,
-    private val playPronunAudio: (position: Int) -> Unit,
+    private val playPronunAudio: (refText: String) -> Unit,
+    private val recordPronunAudio: (refText: String, engWord: String, isRecording: Boolean) -> Unit
     ) : RecyclerView.Adapter<ChallengeDrillsRecyclerViewAdapter.ViewHolder>() {
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
         val view = LayoutInflater.from(parent.context).inflate(R.layout.recycler_view_challenge_drill_item, parent, false)
@@ -26,11 +27,12 @@ class ChallengeDrillsRecyclerViewAdapter(
         holder.tvChallengeDrillWord.text = word
 
         holder.btnChallengeDrillPlay.setOnClickListener {
-            playPronunAudio(holder.adapterPosition)
+            playPronunAudio(word)
         }
 
         holder.btnChallengeDrillRecord.setOnClickListener {
             recording = !recording
+            recordPronunAudio(word, drillBank[position].engWord, recording)
             if (recording) {
                 holder.btnChallengeDrillRecord.setBackgroundResource(R.drawable.bg_text3)
                 holder.btnChallengeDrillRecord.setImageResource(R.drawable.recording)
