@@ -3,6 +3,7 @@ package com.example.rosettascope.screens
 import android.annotation.SuppressLint
 import android.content.Context
 import android.content.Intent
+import androidx.activity.ComponentActivity
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
@@ -40,7 +41,7 @@ import com.example.rosettascope.WordBankActivity
 import com.example.rosettascope.viewmodels.UserViewModel
 
 @Composable
-fun HomeScreen(modifier: Modifier = Modifier, viewModel: UserViewModel = viewModel()) {
+fun HomeScreen(modifier: Modifier = Modifier, viewModel: UserViewModel = viewModel(LocalContext.current as ComponentActivity)) {
     val context = LocalContext.current
     LaunchedEffect(Unit) {
         val email = context.getSharedPreferences("USER", Context.MODE_PRIVATE)

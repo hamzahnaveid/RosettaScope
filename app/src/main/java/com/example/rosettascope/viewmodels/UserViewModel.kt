@@ -16,14 +16,8 @@ import com.google.gson.Gson
 
 class UserViewModel(application: Application) : AndroidViewModel(application) {
     var user by mutableStateOf<User?>(null)
-        private set
-
-    var isLoading by mutableStateOf(true)
-        private set
 
     fun loadUser(email: String) {
-        isLoading = true
-
         val gson = Gson()
         val queue = Volley.newRequestQueue(getApplication<Application>().applicationContext)
         val url = "https://gaston-distant-unamicably.ngrok-free.dev/user/$email"
@@ -34,7 +28,6 @@ class UserViewModel(application: Application) : AndroidViewModel(application) {
                 val json = response.toString()
                 user = gson.fromJson(json, User::class.java)
                 Log.d("JavaDB", "User retrieved")
-                isLoading = false
             },
             {
                     error ->
@@ -44,7 +37,6 @@ class UserViewModel(application: Application) : AndroidViewModel(application) {
                 Toast.LENGTH_SHORT
                 ).show()
                 Log.e("VolleyRequest", error.toString())
-                isLoading = false
             }
         )
 
