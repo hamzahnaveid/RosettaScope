@@ -19,6 +19,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -30,14 +31,25 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.rosettascope.CameraActivity
 import com.example.rosettascope.ChallengeActivity
 import com.example.rosettascope.R
 import com.example.rosettascope.ReviseActivity
 import com.example.rosettascope.WordBankActivity
+import com.example.rosettascope.viewmodels.UserViewModel
 
 @Composable
-fun HomeScreen(modifier: Modifier = Modifier) {
+fun HomeScreen(modifier: Modifier = Modifier, viewModel: UserViewModel = viewModel()) {
+    val context = LocalContext.current
+    LaunchedEffect(Unit) {
+        val email = context.getSharedPreferences("USER", Context.MODE_PRIVATE)
+        .getString("email", "").toString()
+            if (viewModel.user == null) {
+                viewModel.loadUser(email)
+            }
+    }
+
     Image(painter = painterResource(id = R.drawable.bg_home),
         contentDescription = "Background",
         contentScale = ContentScale.FillBounds,

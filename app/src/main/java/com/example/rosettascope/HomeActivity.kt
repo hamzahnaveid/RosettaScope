@@ -31,6 +31,8 @@ import com.example.rosettascope.screens.SettingsScreen
 import com.example.rosettascope.ui.theme.RosettaScopeTheme
 
 class HomeActivity : AppCompatActivity() {
+    val dp = "HomeActivity"
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
