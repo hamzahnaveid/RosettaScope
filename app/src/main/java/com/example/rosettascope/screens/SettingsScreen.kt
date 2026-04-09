@@ -2,6 +2,8 @@ package com.example.rosettascope.screens
 
 import android.content.Context
 import android.content.Intent
+import android.util.Log
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
@@ -32,6 +34,9 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.android.volley.Request
+import com.android.volley.toolbox.JsonObjectRequest
+import com.android.volley.toolbox.Volley
 import com.example.rosettascope.MainActivity
 import com.example.rosettascope.R
 import com.example.rosettascope.models.User
@@ -127,12 +132,7 @@ fun SettingsCardContent(user: User) {
                 },
                 onConfirmation = {
                     openAlertDialog.value = false
-                    val intent = Intent(context, MainActivity::class.java)
-                    context.startActivity(intent)
-                    context.getSharedPreferences("USER", Context.MODE_PRIVATE)
-                        .edit().putString("email", "").apply()
-                    context.getSharedPreferences("USER", Context.MODE_PRIVATE)
-                        .edit().putString("target_language", "").apply()
+                    deleteUser(user.email, context)
                 })
         }
 
@@ -209,4 +209,45 @@ fun DeleteAccountAlertDialog(
             }
         }
     )
+}
+
+private fun deleteUser(email: String, context: Context) {
+    val queue = Volley.newRequestQueue(context)
+    val url = "https://gaston-distant-unamicably.ngrok-free.dev/user-delete/$email"
+
+    val getUserRequest = JsonObjectRequest(
+        Request.Method.DELETE, url, null,
+        { response ->
+            if (response.getString("response").equals("success")) {
+                val intent = Intent(context, MainActivity::class.java)
+                context.startActivity(intent)
+                context.getSharedPreferences("USER", Context.MODE_PRIVATE)
+                    .edit().putString("email", "").apply()
+                context.getSharedPreferences("USER", Context.MODE_PRIVATE)
+                    .edit().putString("target_language", "").apply()
+
+                Toast.makeText(
+                    context,
+                    "Account successfully deleted",
+                    Toast.LENGTH_SHORT)
+                    .show()
+            }
+            else {
+                Toast.makeText(
+                    context,
+                    "An error has occurred. Please try again.",
+                    Toast.LENGTH_SHORT)
+                    .show()
+            }
+        },
+        { error ->
+            Toast.makeText(
+                context,
+                "Error connecting to server",
+                Toast.LENGTH_SHORT
+            )
+                .show()
+            Log.e("VolleyRequest", error.toString())
+        })
+    queue.add(getUserRequest)
 }
