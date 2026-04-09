@@ -1,11 +1,212 @@
 package com.example.rosettascope.screens
 
+import android.content.Context
+import android.content.Intent
+import androidx.activity.ComponentActivity
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.wrapContentHeight
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.ElevatedCard
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.rosettascope.MainActivity
+import com.example.rosettascope.R
+import com.example.rosettascope.models.User
+import com.example.rosettascope.viewmodels.UserViewModel
 
 @Preview(showBackground = true)
 @Composable
-fun SettingsScreen(modifier: Modifier = Modifier) {
+fun SettingsScreen(modifier: Modifier = Modifier, viewModel: UserViewModel = viewModel(LocalContext.current as ComponentActivity)) {
+    val user = viewModel.user
 
+    if (user == null) {
+        Text("Loading...")
+        return
+    }
+
+    Image(painter = painterResource(id = R.drawable.bg_home),
+        contentDescription = "Background",
+        contentScale = ContentScale.FillBounds,
+        modifier = modifier.fillMaxSize()
+    )
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .navigationBarsPadding()
+            .padding(16.dp),
+        contentAlignment = Alignment.Center
+    ) {
+
+        ElevatedCard(
+            elevation = CardDefaults.cardElevation(8.dp),
+            modifier = Modifier
+                .fillMaxWidth(0.9f)
+                .wrapContentHeight()
+        ) {
+            SettingsCardContent(user)
+        }
+    }
+}
+
+@Composable
+fun SettingsCardContent(user: User) {
+    val context = LocalContext.current
+
+    Column(
+        modifier = Modifier
+            .padding(20.dp)
+            .fillMaxWidth(),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        Box {
+            ElevatedCard(
+                elevation = CardDefaults.cardElevation(8.dp),
+                modifier = Modifier
+                    .wrapContentHeight()
+                    .fillMaxWidth(),
+                onClick = {
+                    val intent = Intent(context, MainActivity::class.java)
+                    context.startActivity(intent)
+                    context.getSharedPreferences("USER", Context.MODE_PRIVATE)
+                        .edit().putString("email", "").apply()
+                    context.getSharedPreferences("USER", Context.MODE_PRIVATE)
+                        .edit().putString("target_language", "").apply()
+                }
+            ) {
+                Row(
+                    modifier = Modifier.padding(12.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    Image(
+                        painter = painterResource(R.drawable.signout),
+                        contentDescription = null,
+                        modifier = Modifier.size(48.dp)
+                    )
+
+                    Text(
+                        text = "Sign out",
+                        fontSize = 18.sp,
+                        color = Color(0xFF69A1A6)
+                    )
+                }
+            }
+        }
+
+        val openAlertDialog = remember { mutableStateOf(false) }
+
+        if (openAlertDialog.value) {
+            DeleteAccountAlertDialog(
+                onDismissRequest = {
+                    openAlertDialog.value = false
+                },
+                onConfirmation = {
+                    openAlertDialog.value = false
+                    val intent = Intent(context, MainActivity::class.java)
+                    context.startActivity(intent)
+                    context.getSharedPreferences("USER", Context.MODE_PRIVATE)
+                        .edit().putString("email", "").apply()
+                    context.getSharedPreferences("USER", Context.MODE_PRIVATE)
+                        .edit().putString("target_language", "").apply()
+                })
+        }
+
+        Box {
+            ElevatedCard(
+                elevation = CardDefaults.cardElevation(8.dp),
+                modifier = Modifier
+                    .wrapContentHeight()
+                    .fillMaxWidth(),
+                onClick = {
+                    openAlertDialog.value = true
+                }
+            ) {
+                Row(
+                    modifier = Modifier.padding(12.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    Image(
+                        painter = painterResource(R.drawable.delete),
+                        contentDescription = null,
+                        modifier = Modifier.size(48.dp)
+                    )
+                    Text(
+                        text = "Delete account",
+                        fontSize = 18.sp,
+                        color = Color(0xFFD25859)
+                    )
+                }
+
+            }
+        }
+    }
+}
+
+@Composable
+fun DeleteAccountAlertDialog(
+    onDismissRequest: () -> Unit,
+    onConfirmation: () -> Unit)
+{
+    AlertDialog(
+        icon = {
+            Image(painterResource(R.drawable.warning), contentDescription = "Warning")
+        },
+        title = {
+            Text(text = "Confirm Account Deletion")
+        },
+        text = {
+            Text(text = "You are about to delete your Rosetta Scope account and all of your language learning progress. This action cannot be undone.")
+        },
+        onDismissRequest = {
+            onDismissRequest()
+        },
+        confirmButton = {
+            TextButton(
+                onClick = {
+                    onConfirmation()
+                }
+            ) {
+                Text("Delete Account",
+                    color = Color(0xFFD25859)
+                )
+            }
+        },
+        dismissButton = {
+            TextButton(
+                onClick = {
+                    onDismissRequest()
+                }
+            ) {
+                Text("Cancel",
+                    color = Color(0xFF69A1A6)
+                )
+            }
+        }
+    )
 }
