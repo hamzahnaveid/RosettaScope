@@ -20,15 +20,28 @@
         android:textSize="18sp"
         android:textStyle="italic"/>
 
-    <Button
+    <ImageButton
         android:id="@+id/button_play"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="Play Pronunciation" />
+        android:layout_height="50dp"
+        android:layout_gravity="center"
+        android:layout_margin="16dp"
+        android:background="@drawable/bg_text2"
 
-    <Button
+        android:contentDescription="Play pronunciation"
+        android:padding="8dp"
+        android:scaleType="fitCenter"
+        android:src="@drawable/speaker" />
+
+    <ImageButton
         android:id="@+id/button_record"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="Record Pronunciation" />
+        android:layout_height="50dp"
+        android:layout_gravity="center"
+        android:layout_margin="16dp"
+        android:background="@drawable/bg_text2"
+        android:contentDescription="Record pronunciation"
+        android:padding="8dp"
+        android:scaleType="fitCenter"
+        android:src="@drawable/microphone" />
 </LinearLayout>

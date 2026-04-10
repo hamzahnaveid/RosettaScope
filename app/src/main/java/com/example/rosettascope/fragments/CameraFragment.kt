@@ -30,7 +30,8 @@ import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.Button
+import android.widget.ImageButton
+import android.widget.ImageView
 import android.widget.ProgressBar
 import android.widget.TextView
 import android.widget.Toast
@@ -42,6 +43,7 @@ import androidx.camera.core.ImageAnalysis.OUTPUT_IMAGE_FORMAT_RGBA_8888
 import androidx.camera.core.Preview
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.core.content.ContextCompat
+import androidx.core.view.setPadding
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
 import androidx.fragment.app.viewModels
@@ -419,6 +421,7 @@ class CameraFragment : Fragment(), ObjectDetectorHelper.DetectorListener {
     private fun showTranslationLoadingDialog(word: String) {
         val builder = AlertDialog.Builder(requireContext())
         builder.setTitle("Translating \"$word\"...")
+        builder.setView(R.layout.dialog_circular_progress)
         builder.setCancelable(false)
         currentDialog = builder.create()
         currentDialog?.show()
@@ -427,6 +430,7 @@ class CameraFragment : Fragment(), ObjectDetectorHelper.DetectorListener {
     private fun showGradeLoadingDialog() {
         val builder = AlertDialog.Builder(requireContext())
         builder.setTitle("Grading pronunciation...")
+        builder.setView(R.layout.dialog_circular_progress)
         builder.setCancelable(false)
         currentDialog = builder.create()
         currentDialog?.show()
@@ -441,8 +445,10 @@ class CameraFragment : Fragment(), ObjectDetectorHelper.DetectorListener {
         val view = LayoutInflater.from(requireContext()).inflate(R.layout.dialog_translation, null)
         val tvTranslated: TextView = view.findViewById(R.id.textview_translation)
         val tvOriginal: TextView = view.findViewById(R.id.textview_originaltext)
-        val btnPlay: Button = view.findViewById(R.id.button_play)
-        val btnRecord: Button = view.findViewById(R.id.button_record)
+        val btnPlay: ImageButton = view.findViewById(R.id.button_play)
+        val btnRecord: ImageButton = view.findViewById(R.id.button_record)
+
+        var recording = false
 
         tvTranslated.text = fullTranslation
         tvOriginal.text = originalText
@@ -457,13 +463,19 @@ class CameraFragment : Fragment(), ObjectDetectorHelper.DetectorListener {
             currentAudioBase64?.let { playAudioFromBase64(it) }
         }
         btnRecord.setOnClickListener {
-            if (btnRecord.text == "Stop Recording") {
+            recording = !recording
+            if (!recording) {
                 stopRecording()
-                btnRecord.text = "Record Pronunciation"
+                btnRecord.setBackgroundResource(R.drawable.bg_text2)
+                btnRecord.setImageResource(R.drawable.microphone)
+                btnRecord.setPadding(16)
             }
             else {
                 startRecording()
-                btnRecord.text = "Stop Recording"
+                btnRecord.setBackgroundResource(R.drawable.bg_text3)
+                btnRecord.setImageResource(R.drawable.recording)
+                btnRecord.setPadding(16)
+
             }
         }
 
@@ -474,7 +486,11 @@ class CameraFragment : Fragment(), ObjectDetectorHelper.DetectorListener {
         val view = LayoutInflater.from(requireContext()).inflate(R.layout.dialog_grade, null)
 
         val tvTranslated: TextView = view.findViewById(R.id.textview_grade_translation)
-        val btnPlay: Button = view.findViewById(R.id.button_grade_play)
+        val btnPlay: ImageButton = view.findViewById(R.id.button_grade_play)
+
+        val pbMastery: ProgressBar = view.findViewById(R.id.pb_mastery)
+        val tvMasteryLabel: TextView = view.findViewById(R.id.label_pb_mastery)
+        val ivMastery: ImageView = view.findViewById(R.id.imageView_pb_mastery)
 
         val tvFeedback: TextView = view.findViewById(R.id.textview_feedback)
 
@@ -504,9 +520,42 @@ class CameraFragment : Fragment(), ObjectDetectorHelper.DetectorListener {
         val completenessScore: Int = scores.getDouble("CompletenessScore").toInt()
         val pronScore: Int = scores.getDouble("PronScore").toInt()
 
+        playResultAudio(pronScore)
+
         tvTranslated.text = result.getString("DisplayText")
         btnPlay.setOnClickListener {
             currentAudioBase64?.let { playAudioFromBase64(it) }
+        }
+
+        when (newConfidenceMastered.times(100)?.toInt()) {
+            in 0..24 -> {
+                pbMastery.setProgress((newConfidenceMastered/0.25).times(100).toInt(), true)
+                tvMasteryLabel.text = "Beginner"
+            }
+
+            in 25..76 -> {
+                pbMastery.setProgress((newConfidenceMastered/0.77).times(100).toInt(), true)
+                tvMasteryLabel.text = "Intermediate"
+            }
+
+            in 77..94 -> {
+                pbMastery.setProgress((newConfidenceMastered/0.95).times(100).toInt(), true)
+                tvMasteryLabel.text = "Advanced"
+            }
+
+            in 95..100 -> {
+                ivMastery.setImageResource(R.drawable.mastered_tag)
+                pbMastery.setProgress(100, true)
+                tvMasteryLabel.text = "Mastered"
+            }
+        }
+
+        if (newConfidenceMastered > user?.confidenceScores[currentWord]?.toDouble()!!) {
+            ivMastery.setImageResource(R.drawable.up_arrow)
+        }
+        else {
+            ivMastery.setImageResource(R.drawable.down_arrow)
+
         }
 
         tvFeedback.text = feedback
@@ -632,6 +681,21 @@ class CameraFragment : Fragment(), ObjectDetectorHelper.DetectorListener {
 //        }
 //        return syllables
 //    }
+
+    private fun playResultAudio(pronScore: Int) {
+        var resId: Int = 0
+
+        mediaPlayer?.release()
+
+        if (pronScore >= 90) {
+            resId = R.raw.correct
+        }
+        else {
+            resId = R.raw.incorrect
+        }
+        mediaPlayer = MediaPlayer.create(requireContext(), resId)
+        mediaPlayer?.start()
+    }
 
     private fun playAudioFromBase64(base64Audio: String) {
         val audioBytes = android.util.Base64.decode(base64Audio, android.util.Base64.DEFAULT)
