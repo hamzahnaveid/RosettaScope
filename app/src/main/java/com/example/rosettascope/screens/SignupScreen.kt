@@ -269,7 +269,7 @@ fun DisplayLangSpinner() {
         "French",
         "Spanish",
         "Vietnamese",
-        "Mandarin Chinese",
+        "Simplified Chinese",
         "Arabic",
         "Hindi",
         "Korean",

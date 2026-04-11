@@ -26,7 +26,9 @@ class ChallengeQuestionsRecyclerViewAdapter(
     private val progressBar: ProgressBar,
     private val onNextClicked: (Int) -> Unit,
     private val updateConfidenceScore: (KTAnswerData) -> Unit,
-    private val completeChallenge: () -> Unit
+    private val completeChallenge: () -> Unit,
+    private val playResultAudio: (Boolean) -> Unit
+
 ) : RecyclerView.Adapter<ChallengeQuestionsRecyclerViewAdapter.ViewHolder>() {
     private val stateMap = mutableMapOf<Int, KTChallengeState>()
 
@@ -110,6 +112,7 @@ class ChallengeQuestionsRecyclerViewAdapter(
                     currentState.answer = answer
                     currentState.checked = true
                     currentState.correct = currentState.input.lowercase() == answer.lowercase()
+                    playResultAudio(currentState.correct)
                     notifyItemChanged(pos)
                     updateConfidenceScore(KTAnswerData(questionBank[pos].engWord, currentState.correct))
                     Log.d("ChallengeRecyclerView", response)

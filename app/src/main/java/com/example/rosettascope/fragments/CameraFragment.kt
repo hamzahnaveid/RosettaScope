@@ -56,8 +56,8 @@ import com.android.volley.toolbox.HttpHeaderParser
 import com.android.volley.toolbox.JsonObjectRequest
 import com.android.volley.toolbox.StringRequest
 import com.android.volley.toolbox.Volley
-import com.example.rosettascope.HomeActivity
 import com.example.rosettascope.R
+import com.example.rosettascope.ResultsActivity
 import com.example.rosettascope.adapters.ChallengeWordsRecyclerViewAdapter
 import com.example.rosettascope.adapters.ScoreRecyclerViewAdapter
 import com.example.rosettascope.ar.OverlayView
@@ -104,6 +104,7 @@ class CameraFragment : Fragment(), ObjectDetectorHelper.DetectorListener {
     private var challengeTranslatedWords = mutableMapOf<String, String>()
     private var challengeHints: String = "Loading hints..."
     private var challengeCount: Int = 0
+    private var challengeLives: Int = 3
     private var challengeActive = false
 
     private lateinit var objectDetectorHelper: ObjectDetectorHelper
@@ -206,6 +207,8 @@ class CameraFragment : Fragment(), ObjectDetectorHelper.DetectorListener {
             fabContinue.visibility = View.VISIBLE
             val tvChallengeCounter = fragmentCameraBinding.textViewChallengeCounter
             tvChallengeCounter.visibility = View.VISIBLE
+            val ivLives = fragmentCameraBinding.imageViewLives
+            ivLives.visibility = View.VISIBLE
 
             fabHint.setOnClickListener { showChallengeHintDialog() }
             fabList.setOnClickListener { showChallengeListDialog() }
@@ -213,6 +216,10 @@ class CameraFragment : Fragment(), ObjectDetectorHelper.DetectorListener {
 
             challengeActive = true
             retrieveChallengeWordBank(challengeCategory)
+        }
+        else {
+            val bannerDiscovery = fragmentCameraBinding.discoverBanner
+            bannerDiscovery.visibility = View.VISIBLE
         }
 
         // Initialize our background executor
@@ -254,9 +261,29 @@ class CameraFragment : Fragment(), ObjectDetectorHelper.DetectorListener {
                 if (challengeActive) {
                     if (challengeWordBank.contains(word) && challengeWordBank[word] == false) {
                         challengeCount++
+
+                        mediaPlayer = MediaPlayer.create(requireContext(), R.raw.correct)
+                        mediaPlayer?.start()
+
                         challengeWordBank[word] = true
 
                         fragmentCameraBinding.textViewChallengeCounter.text = "${challengeCount}/5"
+                    }
+                    else {
+                        challengeLives--
+
+                        mediaPlayer = MediaPlayer.create(requireContext(), R.raw.incorrect)
+                        mediaPlayer?.start()
+
+                        when (challengeLives) {
+                            2 -> fragmentCameraBinding.imageViewLives.setImageResource(R.drawable.two_lives)
+                            1 -> fragmentCameraBinding.imageViewLives.setImageResource(R.drawable.one_lives)
+                            0 -> fragmentCameraBinding.imageViewLives.setImageResource(R.drawable.no_lives)
+                        }
+                        if (challengeLives == 0) {
+                            challengeActive = false
+                            completeChallenge()
+                        }
                     }
 
                     if (!challengeWordBank.values.contains(false)) {
@@ -550,12 +577,17 @@ class CameraFragment : Fragment(), ObjectDetectorHelper.DetectorListener {
             }
         }
 
-        if (newConfidenceMastered > user?.confidenceScores[currentWord]?.toDouble()!!) {
-            ivMastery.setImageResource(R.drawable.up_arrow)
+        if (user?.confidenceScores?.contains(currentWord)!!) {
+            if (newConfidenceMastered > user?.confidenceScores[currentWord]?.toDouble()!!) {
+                ivMastery.setImageResource(R.drawable.up_arrow)
+            }
+            else {
+                ivMastery.setImageResource(R.drawable.down_arrow)
+
+            }
         }
         else {
-            ivMastery.setImageResource(R.drawable.down_arrow)
-
+            ivMastery.setImageResource(R.drawable.exclamation_mark)
         }
 
         tvFeedback.text = feedback
@@ -978,7 +1010,7 @@ class CameraFragment : Fragment(), ObjectDetectorHelper.DetectorListener {
                 .setMessage("Are you sure you want to quit? You won't receive the full rewards.")
                 .setPositiveButton("Yes", DialogInterface.OnClickListener() { dialog, _ ->
                     dialog.dismiss()
-                    val intent = Intent(context, HomeActivity::class.java)
+                    val intent = Intent(context, ResultsActivity::class.java)
                     context?.startActivity(intent)
                 })
                 .setNegativeButton("No", DialogInterface.OnClickListener() { dialog, _ ->
@@ -988,7 +1020,7 @@ class CameraFragment : Fragment(), ObjectDetectorHelper.DetectorListener {
                 .show()
             return
         }
-        val intent = Intent(context, HomeActivity::class.java)
+        val intent = Intent(context, ResultsActivity::class.java)
         context?.startActivity(intent)
     }
 

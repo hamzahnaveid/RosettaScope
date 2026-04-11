@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="horizontal"
+    android:padding="16dp">
+
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="16dp">
+
+        <TextView
+            android:id="@+id/label_pb_result_word"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:padding="8dp"
+            android:text="Word"
+            android:textAlignment="center"
+            android:textStyle="bold"
+            android:textSize="20sp" />
+
+        <ProgressBar
+            android:id="@+id/pb_result_mastery"
+            style="@android:style/Widget.DeviceDefault.Light.ProgressBar.Horizontal"
+            android:layout_width="200dp"
+            android:layout_height="18dp"
+            android:layout_gravity="center"
+            android:layout_marginStart="8dp"
+            android:max="100"
+            android:paddingBottom="4dp"
+            android:progress="0"
+            android:progressTint="#28B306"
+            android:scaleY="2" />
+
+        <TextView
+            android:id="@+id/label_pb_result_mastery"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:padding="8dp"
+            android:text="Mastery Level"
+            android:textAlignment="center"
+            android:textSize="20sp" />
+
+    </LinearLayout>
+
+    <ImageView
+        android:id="@+id/imageView_pb_result_mastery"
+        android:layout_width="50dp"
+        android:layout_height="124dp"
+        android:layout_marginStart="8dp"
+        android:layout_marginTop="8dp"
+        android:src="?attr/homeAsUpIndicator" />
+
+</LinearLayout>

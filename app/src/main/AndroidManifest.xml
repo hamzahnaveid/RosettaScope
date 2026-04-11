@@ -25,6 +25,9 @@
         android:theme="@style/Theme.RosettaScope"
         android:usesCleartextTraffic="true">
         <activity
+            android:name=".ResultsActivity"
+            android:exported="false" />
+        <activity
             android:name=".PPDrillsActivity"
             android:exported="false" />
         <activity

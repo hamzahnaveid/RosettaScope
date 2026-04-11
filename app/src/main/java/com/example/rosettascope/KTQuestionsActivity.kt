@@ -1,6 +1,7 @@
 package com.example.rosettascope
 
 import android.content.Intent
+import android.media.MediaPlayer
 import android.os.Bundle
 import android.os.CountDownTimer
 import android.util.Log
@@ -29,6 +30,7 @@ import com.google.gson.Gson
 class KTQuestionsActivity : AppCompatActivity() {
     var questionBank = listOf<Score>()
     private var user: User? = null
+    private var mediaPlayer: MediaPlayer? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -178,6 +180,9 @@ class KTQuestionsActivity : AppCompatActivity() {
             },
             completeChallenge = {
                 toResultScreen()
+            },
+            playResultAudio = { isCorrect ->
+                playResultAudio(isCorrect)
             }
         )
         rvChallengeQuestion.adapter = adapter
@@ -190,9 +195,24 @@ class KTQuestionsActivity : AppCompatActivity() {
         snapHelper.attachToRecyclerView(rvChallengeQuestion)
     }
 
+    private fun playResultAudio(isCorrect: Boolean) {
+        var resId: Int = 0
+
+        mediaPlayer?.release()
+
+        if (isCorrect) {
+            resId = R.raw.correct
+        }
+        else {
+            resId = R.raw.incorrect
+        }
+        mediaPlayer = MediaPlayer.create(this, resId)
+        mediaPlayer?.start()
+    }
+
     fun toResultScreen() {
 //        saveUserProgress()
-        val intent = Intent(this@KTQuestionsActivity, HomeActivity::class.java)
+        val intent = Intent(this@KTQuestionsActivity, ResultsActivity::class.java)
         startActivity(intent)
     }
 }
