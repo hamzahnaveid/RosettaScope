@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<com.google.android.material.chip.ChipGroup
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/ms_filterGroup"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:padding="8dp"
+    app:singleSelection="true"
+    app:selectionRequired="true"
+    app:chipSpacing="8dp">
+
+    <com.google.android.material.chip.Chip
+        android:id="@+id/ms_chip_all"
+        style="@style/Widget.MaterialComponents.Chip.Filter"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="All"
+        android:checked="true"
+        app:chipBackgroundColor="@color/chip_selector2"
+        app:checkedIconVisible="false"/>
+
+    <com.google.android.material.chip.Chip
+        android:id="@+id/ms_chip_beginner"
+        style="@style/Widget.MaterialComponents.Chip.Filter"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Beginner"
+        app:chipBackgroundColor="@color/chip_selector2"
+        app:checkedIconVisible="false"/>
+
+    <com.google.android.material.chip.Chip
+        android:id="@+id/ms_chip_intermediate"
+        style="@style/Widget.MaterialComponents.Chip.Filter"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Intermediate"
+        app:chipBackgroundColor="@color/chip_selector2"
+        app:checkedIconVisible="false"/>
+
+    <com.google.android.material.chip.Chip
+        android:id="@+id/ms_chip_advanced"
+        style="@style/Widget.MaterialComponents.Chip.Filter"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Advanced"
+        app:chipBackgroundColor="@color/chip_selector2"
+        app:checkedIconVisible="false"/>
+
+</com.google.android.material.chip.ChipGroup>
