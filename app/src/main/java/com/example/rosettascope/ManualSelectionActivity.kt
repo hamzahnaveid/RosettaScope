@@ -1,14 +1,16 @@
 package com.example.rosettascope
 
+import android.content.Intent
 import android.os.Bundle
 import android.util.Log
+import android.widget.Button
+import android.widget.Toast
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import com.airbnb.epoxy.EpoxyRecyclerView
 import com.example.rosettascope.epoxy.TrainingWordEpoxyController
-import com.example.rosettascope.epoxy.WordEpoxyController
 import com.example.rosettascope.helpers.WordFilter
 import com.example.rosettascope.helpers.getFilter
 import com.google.android.material.chip.Chip
@@ -16,8 +18,9 @@ import com.google.android.material.chip.ChipGroup
 
 class ManualSelectionActivity : AppCompatActivity() {
     private var epoxyRecyclerView: EpoxyRecyclerView? = null
-    var discoveredWords = hashMapOf<String, Double>()
+    private var discoveredWords = hashMapOf<String, Double>()
     private var selectedFilter = WordFilter.ALL
+    private var selectedWords = mutableSetOf<String>()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -46,6 +49,19 @@ class ManualSelectionActivity : AppCompatActivity() {
             }
             setupRecyclerView()
         }
+
+        val btnContinue = findViewById<Button>(R.id.button_continue_training)
+        btnContinue.setOnClickListener {
+            val trainingWords: HashMap<String, Double> = discoveredWords.filter { word ->
+                selectedWords.contains(word.key)
+            } as HashMap<String, Double>
+
+            Log.d("JavaDB", trainingWords.toString())
+            val intent = Intent(this@ManualSelectionActivity, TrainingActivity::class.java)
+            intent.putExtra("trainingWords", trainingWords)
+            startActivity(intent)
+        }
+
     }
 
     fun setupRecyclerView() {
@@ -58,6 +74,37 @@ class ManualSelectionActivity : AppCompatActivity() {
 
         val controller = TrainingWordEpoxyController()
         epoxyRecyclerView!!.setController(controller)
-        controller.setData(filteredWords, discoveredWords)
+        controller.setData(filteredWords, discoveredWords, selectedWords) {
+            word, isChecked ->
+
+            if (isChecked) {
+                if (selectedWords.size >= 5) {
+                    Toast.makeText(
+                        this,
+                        "Cannot select more than 5 words to train",
+                        Toast.LENGTH_SHORT)
+                        .show()
+                    return@setData false
+                }
+                selectedWords.add(word)
+                Log.d("Selected Words", selectedWords.toString())
+            }
+            else {
+                selectedWords.remove(word)
+                Log.d("Selected Words", selectedWords.toString())
+            }
+            if (!selectedWords.isEmpty()) {
+                val btn = findViewById<Button>(R.id.button_continue_training)
+                btn.isEnabled = true
+                btn.alpha = 1f
+            }
+            else {
+                val btn = findViewById<Button>(R.id.button_continue_training)
+                btn.isEnabled = false
+                btn.alpha = 1f
+            }
+
+            true
+        }
     }
 }

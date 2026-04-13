@@ -9,7 +9,9 @@ import com.example.rosettascope.helpers.KotlinHelperModel
 
 class TrainingWordEpoxyModel(
     val word: String,
-    val discoveredWords: Map<String, Double>
+    val discoveredWords: Map<String, Double>,
+    val isChecked: Boolean,
+    val onCheckedChanged: (String, Boolean) -> Boolean
 ) : KotlinHelperModel(R.layout.recycler_view_word_item2) {
 
     val layout by bind<ConstraintLayout>(R.id.ms_word_item_layout)
@@ -21,8 +23,20 @@ class TrainingWordEpoxyModel(
     override fun bind() {
         tvWord.text = word
 
+        checkBox.setOnCheckedChangeListener(null)
+
+        checkBox.isChecked = isChecked
+
         layout.setOnClickListener {
             checkBox.isChecked = !checkBox.isChecked
+        }
+
+        checkBox.setOnCheckedChangeListener { _, checked ->
+            val allowed = onCheckedChanged(word, checked)
+
+            if (!allowed) {
+                checkBox.isChecked = false
+            }
         }
 
         when (discoveredWords.get(word)?.times(100)?.toInt()) {
