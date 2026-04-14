@@ -8,7 +8,7 @@
 
     <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="219dp"
+        android:layout_height="200dp"
         android:orientation="vertical">
 
         <ImageView
@@ -34,7 +34,7 @@
 
     <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="132dp"
+        android:layout_height="188dp"
         android:orientation="vertical">
 
         <TextView
@@ -48,6 +48,20 @@
             android:text="Word"
             android:textSize="24sp"
             android:textStyle="bold" />
+
+        <ImageButton
+            android:id="@+id/button_challenge_drill_feedback"
+            android:layout_width="60dp"
+            android:layout_height="60dp"
+            android:layout_gravity="center"
+            android:layout_margin="16dp"
+            android:background="@drawable/bg_text"
+
+            android:contentDescription="Open Feedback"
+            android:padding="8dp"
+            android:scaleType="fitCenter"
+            android:src="@drawable/review"
+            android:visibility="invisible" />
 
     </LinearLayout>
 

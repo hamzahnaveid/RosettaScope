@@ -11,10 +11,11 @@
         android:layout_height="match_parent">
 
         <LinearLayout
-            android:orientation="vertical"
-            android:padding="16dp"
+            android:id="@+id/layout_word_pronun"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content">
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="16dp">
 
             <TextView
                 android:id="@+id/textview_grade_translation"
@@ -39,14 +40,16 @@
         </LinearLayout>
 
         <TextView
+            android:id="@+id/label_progress"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Progress"
             android:padding="8dp"
+            android:text="Progress"
             android:textSize="24sp"
             android:textStyle="bold" />
 
         <LinearLayout
+            android:id="@+id/layout_mastery"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:orientation="horizontal"

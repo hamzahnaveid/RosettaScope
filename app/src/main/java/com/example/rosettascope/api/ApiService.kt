@@ -27,7 +27,7 @@ data class GradingResponse(
     val result: String,
     val feedback: String,
     val new_confidence_mastered: Double,
-    val is_correct: Boolean
+    val is_correct: String
 )
 
 data class FeedbackRequest(
