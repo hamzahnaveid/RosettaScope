@@ -33,6 +33,8 @@ import java.io.IOException
 import kotlin.io.path.createTempFile
 
 class PPDrillsActivity : AppCompatActivity() {
+    private var currentIndex = 0
+    private var attemptsCount = 0
     private var mediaPlayer: MediaPlayer? = null
     private var mediaRecorder: MediaRecorder? = null
     var painPoints = listOf<Score>()
@@ -67,7 +69,7 @@ class PPDrillsActivity : AppCompatActivity() {
                 val json = response.toString()
                 painPoints = gson.fromJson(json, Array<Score>::class.java).toList()
                 Log.d("JavaDB", painPoints.toString())
-                populateAudioBase64List()
+                prefetchAudio(0)
                 setupRecyclerView()
             },
             { error ->
@@ -87,16 +89,21 @@ class PPDrillsActivity : AppCompatActivity() {
         queue.add(getPainPointsRequest)
     }
 
-    fun populateAudioBase64List() {
+    fun prefetchAudio(startIndex: Int, count: Int = 2) {
         val queue = Volley.newRequestQueue(this)
 
-        for (painPoint in painPoints) {
-            val url = "https://subopaquely-unirradiative-bradley.ngrok-free.dev/get-audio-base64/${painPoint.word}/${painPoint.language}"
+        for (i in startIndex until (startIndex + count).coerceAtMost(painPoints.size)) {
+            if (painPointsAudioBase64.containsKey(painPoints[i].word)) continue
+
+            val url = "https://subopaquely-unirradiative-bradley.ngrok-free.dev/get-audio-base64/${painPoints[i].word}/${painPoints[i].language}"
             val getAudioBase64Request = StringRequest(
                 Request.Method.GET, url,
                 { response ->
-                    painPointsAudioBase64.put(painPoint.word, response)
-                    Log.d("JavaDB", painPointsAudioBase64.toString())
+                    painPointsAudioBase64.put(painPoints[i].word, response)
+                    Log.d("PainPointAudio", painPointsAudioBase64.toString())
+
+                    val rv = findViewById<RecyclerView>(R.id.rv_challenge_drill)
+                    rv.adapter?.notifyItemChanged(i)
                 },
                 { error ->
                     Toast.makeText(
@@ -150,12 +157,19 @@ class PPDrillsActivity : AppCompatActivity() {
                 } else {
                     stopRecording(word, engWord)
                 }
+            },
+            isAudioReady = { word ->
+                painPointsAudioBase64.containsKey(word)
             })
         rvChallengeDrill.adapter = adapter
 
         val layoutManager = LinearLayoutManager(this)
         layoutManager.orientation = LinearLayoutManager.HORIZONTAL
-        rvChallengeDrill.layoutManager = layoutManager
+        rvChallengeDrill.layoutManager = object : LinearLayoutManager(this, HORIZONTAL, false) {
+            override fun canScrollHorizontally(): Boolean {
+                return false
+            }
+        }
 
         val snapHelper = PagerSnapHelper()
         snapHelper.attachToRecyclerView(rvChallengeDrill)
@@ -228,7 +242,24 @@ class PPDrillsActivity : AppCompatActivity() {
         gradingViewModel.gradingResult.observe(this) { response ->
             Log.d("GradeResult", response.result)
             Log.d("BKTResult", response.new_confidence_mastered.toString())
-//            showGradeDialog(response.result, response.feedback, response.new_confidence_mastered)
+
+            attemptsCount++
+            if (response.is_correct || attemptsCount >= 3) {
+                currentIndex++
+
+                if (attemptsCount >= 3) {
+                    Toast.makeText(
+                        this,
+                        "We'll skip this one for now and come back to it later.",
+                        Toast.LENGTH_SHORT
+                    )
+                        .show()
+                    attemptsCount = 0
+                }
+
+                val rv = findViewById<RecyclerView>(R.id.rv_challenge_drill)
+                rv.smoothScrollToPosition(currentIndex)
+            }
         }
 
         gradingViewModel.errorMessage.observe(this) { error ->
@@ -241,7 +272,6 @@ class PPDrillsActivity : AppCompatActivity() {
     }
 
     fun toResultScreen() {
-//        saveUserProgress()
         val intent = Intent(this@PPDrillsActivity, HomeActivity::class.java)
         startActivity(intent)
     }
