@@ -210,7 +210,7 @@ class KTQuestionsActivity : AppCompatActivity() {
         mediaPlayer?.start()
     }
 
-    fun toResultScreen() {
+    private fun toResultScreen() {
 //        saveUserProgress()
         val intent = Intent(this@KTQuestionsActivity, ResultsActivity::class.java)
         startActivity(intent)

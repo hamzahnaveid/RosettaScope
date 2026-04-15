@@ -43,6 +43,8 @@ class ChallengeDrillsRecyclerViewAdapter(
 
         holder.btnChallengeDrillPlay.isEnabled = audioReady
         holder.btnChallengeDrillPlay.alpha = if (audioReady) 1.0f else 0.5f
+        holder.btnChallengeDrillRecord.isEnabled = audioReady
+        holder.btnChallengeDrillRecord.alpha = if (audioReady) 1.0f else 0.5f
 
         holder.btnChallengeDrillPlay.setOnClickListener {
             if (audioReady) {

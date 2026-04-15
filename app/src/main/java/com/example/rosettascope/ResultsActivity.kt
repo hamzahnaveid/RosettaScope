@@ -8,6 +8,10 @@ import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
+import androidx.recyclerview.widget.DividerItemDecoration
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
+import com.example.rosettascope.adapters.ResultsRecyclerViewAdapter
 
 class ResultsActivity : AppCompatActivity() {
     private var mediaPlayer: MediaPlayer? = null
@@ -23,11 +27,19 @@ class ResultsActivity : AppCompatActivity() {
         }
         mediaPlayer = MediaPlayer.create(this, R.raw.success_jingle)
         mediaPlayer?.start()
-
+        
         val buttonContinueHome = findViewById<Button>(R.id.button_continue_home)
         buttonContinueHome.setOnClickListener {
             val intent = Intent(this, HomeActivity::class.java)
             startActivity(intent)
         }
+
+        val resultsMap = intent.getSerializableExtra("new_confidence_scores") as Map<String, Double>
+        val userMap = intent.getSerializableExtra("user_confidence_scores") as Map<String, Double>
+
+        val rvResults = findViewById<RecyclerView>(R.id.rv_results)
+        rvResults.layoutManager = LinearLayoutManager(this)
+        rvResults.addItemDecoration(DividerItemDecoration(this, DividerItemDecoration.VERTICAL))
+        rvResults.adapter = ResultsRecyclerViewAdapter(resultsMap, userMap)
     }
 }

@@ -51,8 +51,11 @@ class ResultsRecyclerViewAdapter(
         if (userMap.get(word)!! > resultsMap.get(word)!!) {
             holder.ivMastery.setImageResource(R.drawable.down_arrow)
         }
-        else {
+        else if (userMap.get(word)!! < resultsMap.get(word)!!){
             holder.ivMastery.setImageResource(R.drawable.up_arrow)
+        }
+        else {
+            holder.ivMastery.setImageResource(R.drawable.middle)
         }
     }
 

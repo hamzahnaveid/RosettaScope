@@ -51,6 +51,8 @@ class PPDrillsActivity : AppCompatActivity() {
     var painPoints = listOf<Score>()
     var painPointsAudioBase64 = mutableMapOf<String, String>()
     private val resultsMap = mutableMapOf<String, Boolean>()
+    private val originalMap = mutableMapOf<String, Double>()
+    private val finalMap = mutableMapOf<String, Double>()
     private val gradingViewModel: GradingViewModel by viewModels()
     private lateinit var layoutManager: LockableLinearLayoutManager
     private val tvCounter: TextView by lazy { findViewById(R.id.textView_challenge_dcounter) }
@@ -155,6 +157,7 @@ class PPDrillsActivity : AppCompatActivity() {
             { response ->
                 val json = response.toString()
                 user = gson.fromJson(json, User::class.java)
+                originalMap.putAll(user!!.confidenceScores)
                 Log.d("JavaDB", "User retrieved")
             },
             { error ->
@@ -274,10 +277,12 @@ class PPDrillsActivity : AppCompatActivity() {
             feedback = response.feedback
 
             val word = painPoints[currentIndex].word
+            val engWord = painPoints[currentIndex].engWord
             playResultAudio(response.is_correct)
 
             if (response.is_correct == "True") {
                 resultsMap[word] = true
+                finalMap[engWord] = response.new_confidence_mastered
                 val rv = findViewById<RecyclerView>(R.id.rv_challenge_drill)
                 val layoutManager = rv.layoutManager as LockableLinearLayoutManager
                 rv.adapter?.notifyItemChanged(currentIndex)
@@ -300,6 +305,8 @@ class PPDrillsActivity : AppCompatActivity() {
                 }, 3300)
             } else {
                 resultsMap[word] = false
+                // Don't penalize the user for incorrect answers in this activity
+                finalMap[engWord] = originalMap[engWord]!!
                 val rv = findViewById<RecyclerView>(R.id.rv_challenge_drill)
                 val layoutManager = rv.layoutManager as LockableLinearLayoutManager
                 rv.adapter?.notifyItemChanged(currentIndex)
@@ -331,6 +338,10 @@ class PPDrillsActivity : AppCompatActivity() {
                     }, 3300)
                 }
             }
+
+            if (currentIndex >= painPoints.size) {
+                toResultScreen()
+            }
         }
 
         gradingViewModel.errorMessage.observe(this) { error ->
@@ -355,11 +366,6 @@ class PPDrillsActivity : AppCompatActivity() {
         }
         mediaPlayer = MediaPlayer.create(this, resId)
         mediaPlayer?.start()
-    }
-
-    private fun toResultScreen() {
-        val intent = Intent(this@PPDrillsActivity, HomeActivity::class.java)
-        startActivity(intent)
     }
 
     private fun showGradeDialog(jsonResult: String, feedback: String) {
@@ -502,5 +508,12 @@ class PPDrillsActivity : AppCompatActivity() {
             )
         }
         return scores
+    }
+
+    private fun toResultScreen() {
+        val intent = Intent(this, ResultsActivity::class.java)
+        intent.putExtra("new_confidence_scores", finalMap as HashMap<String, Double>)
+        intent.putExtra("user_confidence_scores", originalMap as HashMap<String, Double>)
+        startActivity(intent)
     }
 }
