@@ -25,8 +25,7 @@ class ChallengeQuestionsRecyclerViewAdapter(
     private val counter: TextView,
     private val progressBar: ProgressBar,
     private val onNextClicked: (Int) -> Unit,
-    private val updateConfidenceScore: (KTAnswerData) -> Unit,
-    private val completeChallenge: () -> Unit,
+    private val updateConfidenceScore: (KTAnswerData, Int) -> Unit,
     private val playResultAudio: (Boolean) -> Unit
 
 ) : RecyclerView.Adapter<ChallengeQuestionsRecyclerViewAdapter.ViewHolder>() {
@@ -114,7 +113,7 @@ class ChallengeQuestionsRecyclerViewAdapter(
                     currentState.correct = currentState.input.lowercase() == answer.lowercase()
                     playResultAudio(currentState.correct)
                     notifyItemChanged(pos)
-                    updateConfidenceScore(KTAnswerData(questionBank[pos].engWord, currentState.correct))
+                    updateConfidenceScore(KTAnswerData(questionBank[pos].engWord, currentState.correct), answerCount)
                     Log.d("ChallengeRecyclerView", response)
                 },
                 { error ->
@@ -131,9 +130,6 @@ class ChallengeQuestionsRecyclerViewAdapter(
             holder.btnChallengeQuestionCheck.alpha = 0.5f
             counter.text = (++answerCount).toString() + "/" + itemCount.toString()
             progressBar.progress++
-            if (answerCount == itemCount) {
-                completeChallenge()
-            }
         }
         holder.btnChallengeQuestionNext.setOnClickListener {
             onNextClicked(position)

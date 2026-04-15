@@ -31,6 +31,8 @@ class KTQuestionsActivity : AppCompatActivity() {
     var questionBank = listOf<Score>()
     private var user: User? = null
     private var mediaPlayer: MediaPlayer? = null
+    private val originalMap = mutableMapOf<String, Double>()
+    private var timer: CountDownTimer? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -45,9 +47,18 @@ class KTQuestionsActivity : AppCompatActivity() {
         retrieveUser()
     }
 
+    override fun onPause() {
+        super.onPause()
+        timer!!.cancel()
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        timer!!.cancel()
+    }
     fun startTimer() {
         val tvTimer: TextView = findViewById(R.id.textView_challenge_timer)
-        val timer = object : CountDownTimer(300000, 1000) {
+        timer = object : CountDownTimer(300000, 1000) {
             override fun onFinish() {
                 toResultScreen()
             }
@@ -107,6 +118,7 @@ class KTQuestionsActivity : AppCompatActivity() {
             { response ->
                 val json = response.toString()
                 user = gson.fromJson(json, User::class.java)
+                originalMap.putAll(user!!.confidenceScores)
                 Log.d("JavaDB", "User retrieved")
             },
             { error ->
@@ -120,28 +132,6 @@ class KTQuestionsActivity : AppCompatActivity() {
             })
         queue.add(getUserRequest)
     }
-
-//    fun saveUserProgress() {
-//        val gson = Gson()
-//        val queue = Volley.newRequestQueue(this)
-//        val url = "https://gaston-distant-unamicably.ngrok-free.dev/save-progress"
-//
-//        val saveUserRequest = JsonObjectRequest(
-//            Request.Method.POST, url, JSONObject(gson.toJson(user)),
-//            { response ->
-//                Log.d("JavaDB", "Progress saved")
-//            },
-//            { error ->
-//                Toast.makeText(
-//                    this,
-//                    "Error connecting to server",
-//                    Toast.LENGTH_SHORT
-//                )
-//                    .show()
-//                Log.e("VolleyRequest", error.toString())
-//            })
-//        queue.add(saveUserRequest)
-//    }
 
     fun setupRecyclerView() {
         val rvChallengeQuestion: RecyclerView = findViewById(R.id.rv_challenge_question)
@@ -157,7 +147,7 @@ class KTQuestionsActivity : AppCompatActivity() {
                     rvChallengeQuestion.smoothScrollToPosition(nextPos)
                 }
             },
-            updateConfidenceScore = { answerData ->
+            updateConfidenceScore = { answerData, answerCount ->
                 val queue = Volley.newRequestQueue(this)
                 val url = "https://subopaquely-unirradiative-bradley.ngrok-free.dev/update-bkt-score-challenge/${user!!.confidenceScores[answerData.engWord]}/${answerData.correct}"
 
@@ -166,6 +156,10 @@ class KTQuestionsActivity : AppCompatActivity() {
                     { response ->
                         user!!.confidenceScores[answerData.engWord] = response.toDouble()
                         Log.d("ChallengeRecyclerView", response)
+
+                        if (answerCount == questionBank.size) {
+                            toResultScreen()
+                        }
                     },
                     { error ->
                         Toast.makeText(
@@ -177,9 +171,6 @@ class KTQuestionsActivity : AppCompatActivity() {
                         Log.e("VolleyRequest", error.toString())
                     })
                 queue.add(checkAnswerRequest)
-            },
-            completeChallenge = {
-                toResultScreen()
             },
             playResultAudio = { isCorrect ->
                 playResultAudio(isCorrect)
@@ -211,8 +202,11 @@ class KTQuestionsActivity : AppCompatActivity() {
     }
 
     private fun toResultScreen() {
-//        saveUserProgress()
+        timer!!.cancel()
+
         val intent = Intent(this@KTQuestionsActivity, ResultsActivity::class.java)
+        intent.putExtra("new_confidence_scores", HashMap(user!!.confidenceScores))
+        intent.putExtra("user_confidence_scores", originalMap as HashMap<String, Double>)
         startActivity(intent)
     }
 }
