@@ -18,9 +18,13 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -46,9 +50,11 @@ fun HomeScreen(modifier: Modifier = Modifier, viewModel: UserViewModel = viewMod
     LaunchedEffect(Unit) {
         val email = context.getSharedPreferences("USER", Context.MODE_PRIVATE)
         .getString("email", "").toString()
-            if (viewModel.user == null) {
-                viewModel.loadUser(email)
-            }
+
+        if (viewModel.user == null) {
+            viewModel.loadUser(email)
+        }
+        viewModel.loadUser(email)
     }
 
     Image(painter = painterResource(id = R.drawable.bg_home),
@@ -65,7 +71,7 @@ fun HomeScreen(modifier: Modifier = Modifier, viewModel: UserViewModel = viewMod
     ) {
         UserGreeting()
         StreakDisplay()
-        ActivityButtons()
+        ActivityButtons(viewModel)
     }
 }
 
@@ -151,13 +157,13 @@ fun StreakDisplay() {
 
 @SuppressLint("RememberInComposition")
 @Composable
-fun ActivityButtons() {
+fun ActivityButtons(viewModel: UserViewModel) {
     val context = LocalContext.current
 
     DiscoverButton(context)
-    ChallengeButton(context)
+    ReviseButton(context, viewModel)
+    ChallengeButton(context, viewModel)
     WordBankButton(context)
-    ReviseButton(context)
 }
 
 @Composable
@@ -185,7 +191,23 @@ fun DiscoverButton(context: Context) {
 }
 
 @Composable
-fun ChallengeButton(context: Context) {
+fun ChallengeButton(context: Context, viewModel: UserViewModel) {
+    var img = painterResource(id = R.drawable.challenge_dartboard)
+    viewModel.user?.wordsEncountered?.let {
+        if (it < 3) {
+            img = painterResource(id = R.drawable.challenge_locked)
+        }
+    }
+
+    val openAlertDialog = remember { mutableStateOf(false) }
+
+    if (openAlertDialog.value) {
+        LockedActivityAlertDialog(
+            onDismissRequest = {
+                openAlertDialog.value = false
+            })
+    }
+
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -197,11 +219,16 @@ fun ChallengeButton(context: Context) {
                 .clip(RoundedCornerShape(20.dp))
                 .clickable(
                     onClick = {
-                        val intent = Intent(context, ChallengeActivity::class.java)
-                        context.startActivity(intent)
+                        if (viewModel.user!!.wordsEncountered < 3) {
+                            openAlertDialog.value = true
+                        }
+                        else {
+                            val intent = Intent(context, ChallengeActivity::class.java)
+                            context.startActivity(intent)
+                        }
                     }
                 ),
-            painter = painterResource(id = R.drawable.challenge_dartboard),
+            painter = img,
             contentDescription = "Challenge",
             contentScale = ContentScale.Crop
         )
@@ -233,7 +260,23 @@ fun WordBankButton(context: Context) {
 }
 
 @Composable
-fun ReviseButton(context: Context) {
+fun ReviseButton(context: Context, viewModel: UserViewModel) {
+    var img = painterResource(id = R.drawable.revise_glasses)
+    viewModel.user?.wordsEncountered?.let {
+        if (it < 3) {
+            img = painterResource(id = R.drawable.revise_locked)
+        }
+    }
+
+    val openAlertDialog = remember { mutableStateOf(false) }
+
+    if (openAlertDialog.value) {
+        LockedActivityAlertDialog(
+            onDismissRequest = {
+                openAlertDialog.value = false
+            })
+    }
+
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -245,13 +288,51 @@ fun ReviseButton(context: Context) {
                 .clip(RoundedCornerShape(20.dp))
                 .clickable(
                     onClick = {
-                        val intent = Intent(context, ReviseActivity::class.java)
-                        context.startActivity(intent)
+                        if (viewModel.user!!.wordsEncountered < 3) {
+                            openAlertDialog.value = true
+                        }
+                        else {
+                            val intent = Intent(context, ReviseActivity::class.java)
+                            context.startActivity(intent)
+                        }
                     }
                 ),
-            painter = painterResource(id = R.drawable.revise_glasses),
+            painter = img,
             contentDescription = "Revise",
             contentScale = ContentScale.Crop
         )
     }
+}
+
+@Composable
+fun LockedActivityAlertDialog(
+    onDismissRequest: () -> Unit
+)
+{
+    AlertDialog(
+        icon = {
+            Image(painterResource(R.drawable.lock   ), contentDescription = "Locked")
+        },
+        title = {
+            Text(text = "Activity Locked")
+        },
+        text = {
+            Text(text = "This activity is locked until you have discovered at least 3 words. Get out there and explore!")
+        },
+        onDismissRequest = {
+            onDismissRequest()
+        },
+        confirmButton = {},
+        dismissButton = {
+            TextButton(
+                onClick = {
+                    onDismissRequest()
+                }
+            ) {
+                Text("OK",
+                    color = Color(0xFF69A1A6)
+                )
+            }
+        }
+    )
 }
