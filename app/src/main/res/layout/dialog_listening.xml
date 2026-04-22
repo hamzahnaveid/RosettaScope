@@ -1,6 +1,52 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    android:layout_height="match_parent"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:orientation="vertical">
 
-</androidx.constraintlayout.widget.ConstraintLayout>
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
+
+        <ImageButton
+            android:id="@+id/button_play_speaking"
+            android:layout_width="match_parent"
+            android:layout_height="50dp"
+            android:layout_gravity="center"
+            android:layout_margin="8dp"
+            android:background="@drawable/bg_text2"
+
+            android:contentDescription="Play pronunciation"
+            android:padding="8dp"
+            android:scaleType="fitCenter"
+            android:src="@drawable/speaker" />
+
+        <com.google.android.material.chip.ChipGroup
+            android:id="@+id/chipGroup_listening"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_margin="16dp"
+            app:chipSpacing="8dp"
+            app:singleSelection="false" />
+
+        <Button
+            android:id="@+id/button_submit_listening"
+            android:layout_width="match_parent"
+            android:layout_height="50dp"
+            android:layout_gravity="center"
+            android:layout_margin="8dp"
+            android:background="@drawable/bg_text2"
+
+            android:padding="8dp"
+            android:scaleType="fitCenter"
+            android:src="@drawable/speaker"
+            android:text="Check Answer"
+            android:textAllCaps="false"
+            android:textColor="@color/white"
+            android:textSize="20sp" />
+
+    </LinearLayout>
+
+</LinearLayout>

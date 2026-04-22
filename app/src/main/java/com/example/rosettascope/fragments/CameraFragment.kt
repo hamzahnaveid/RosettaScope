@@ -854,12 +854,6 @@ class CameraFragment : Fragment(), ObjectDetectorHelper.DetectorListener {
         val saveScoreRequest = JsonObjectRequest(
             Request.Method.POST, url, json,
             { response ->
-                Toast.makeText(
-                    context,
-                    "Progress saved",
-                    Toast.LENGTH_SHORT
-                )
-                    .show()
                 Log.d("JavaDB", "Score saved")
             }, {
                     error ->
