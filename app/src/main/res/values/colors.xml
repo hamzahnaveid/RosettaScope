@@ -12,5 +12,8 @@
     <color name="rosetta_yellower">#8D7C2B</color>
     <color name="rosetta_blue">#71AFB6</color>
     <color name="rosetta_bluer">#51709C</color>
+    <color name="completed_green">#63CA5B</color>
+    <color name="uncompleted_grey">#A0ABAD</color>
+
 
 </resources>

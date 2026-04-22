@@ -11,7 +11,9 @@ import com.example.rosettascope.R
 class ChallengeTrainingRecyclerViewAdapter (
     private val translationMap: Map<String, String>,
     private val feedbackMap: Map<String, String>,
-    ) : RecyclerView.Adapter<ChallengeTrainingRecyclerViewAdapter.ViewHolder>() {
+//    private val isDataReady: (String) -> Boolean,
+    private val displayExerciseListDialog: () -> Unit
+) : RecyclerView.Adapter<ChallengeTrainingRecyclerViewAdapter.ViewHolder>() {
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
         val view = LayoutInflater.from(parent.context).inflate(R.layout.recycler_view_challenge_training_item, parent, false)
         return ViewHolder(view)
@@ -21,6 +23,18 @@ class ChallengeTrainingRecyclerViewAdapter (
         val word = translationMap.keys.elementAt(position)
         val translation = translationMap[word]
         val feedback = feedbackMap[word]
+
+        holder.tvTrainingWord.text = word
+
+//        val dataReady = isDataReady(word)
+
+//        holder.btnTrainingStart.isEnabled = dataReady
+//        holder.btnTrainingStart.alpha = if (dataReady) 1.0f else 0.5f
+//        holder.btnTrainingStart.text = if (dataReady) "Start Training" else "Please wait..."
+
+        holder.btnTrainingStart.setOnClickListener {
+            displayExerciseListDialog()
+        }
     }
 
     override fun getItemCount(): Int {

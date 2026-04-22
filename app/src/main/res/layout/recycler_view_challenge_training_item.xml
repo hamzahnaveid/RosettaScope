@@ -71,7 +71,7 @@
 
                 android:background="@drawable/bg_text2"
                 android:contentDescription="Start training"
-                android:enabled="false"
+                android:enabled="true"
                 android:padding="8dp"
                 android:scaleType="fitCenter"
                 android:text="Start Training"
