@@ -1,5 +1,6 @@
 package com.example.rosettascope
 
+import android.content.Context
 import android.content.Intent
 import android.media.MediaPlayer
 import android.media.MediaRecorder
@@ -29,13 +30,20 @@ import com.android.volley.toolbox.JsonObjectRequest
 import com.android.volley.toolbox.Volley
 import com.example.rosettascope.adapters.ChallengeTrainingRecyclerViewAdapter
 import com.example.rosettascope.helpers.LockableLinearLayoutManager
+import com.example.rosettascope.models.TrainingItem
 import com.example.rosettascope.models.User
+import com.example.rosettascope.viewmodels.FeedbackViewModel
 import com.example.rosettascope.viewmodels.GradingViewModel
+import com.example.rosettascope.viewmodels.TrainingViewModel
 import com.google.android.material.chip.Chip
 import com.google.android.material.chip.ChipGroup
 import com.google.gson.Gson
+import org.json.JSONArray
 import java.io.File
 import java.io.IOException
+import java.util.LinkedList
+import java.util.Queue
+import kotlin.getValue
 import kotlin.io.path.createTempFile
 
 class TrainingActivity : AppCompatActivity() {
@@ -49,12 +57,16 @@ class TrainingActivity : AppCompatActivity() {
     private val finalMap = mutableMapOf<String, Double>()
     private lateinit var layoutManager: LockableLinearLayoutManager
     private val gradingViewModel: GradingViewModel by viewModels()
+    private val feedbackViewModel: FeedbackViewModel by viewModels()
+    private val trainingViewModel: TrainingViewModel by viewModels()
     private val tvCounter: TextView by lazy { findViewById(R.id.textView_challenge_tcounter) }
     private val progressBar: ProgressBar by lazy { findViewById(R.id.progressBar_challenge_tprogbar) }
     private var user: User? = null
     private val queue by lazy { Volley.newRequestQueue(this) }
-
-
+    private lateinit var email: String
+    private var currentIndex = 0
+    private lateinit var trainingWordsList: List<String>
+    private val trainingQueue: Queue<TrainingItem> = LinkedList<TrainingItem>()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -65,27 +77,46 @@ class TrainingActivity : AppCompatActivity() {
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom)
             insets
         }
-        retrieveUser()
+        email = getSharedPreferences("USER", MODE_PRIVATE).getString("email", "").toString()
 
         trainingWords = intent.getSerializableExtra("trainingWords") as HashMap<String, Double>
         Log.d("JavaDB", trainingWords.toString())
 
-        translationMap.put("1", "")
-        translationMap.put("2", "")
-        translationMap.put("3", "")
-
-        tvCounter.text = "0/${trainingWords.size}"
-        progressBar.max = trainingWords.size
+        trainingWordsList = trainingWords.keys.toList()
 
         completedExercises.put("speaking", false)
         completedExercises.put("listening", false)
         completedExercises.put("reading", false)
+
+        observeFeedbackViewModel()
+        observeTrainingViewModel()
+        observeGradingViewModel()
+
+        fetchNextBatchWords()
+        retrieveUser()
+
+        tvCounter.text = "${currentIndex}/${trainingWords.size}"
+        progressBar.max = trainingWords.size
         setupRecyclerView()
     }
 
-    private fun retrieveUser() {
-        val email = getSharedPreferences("USER", MODE_PRIVATE).getString("email", "")
+    private fun fetchNextBatchWords() {
+        val targetLanguage = getSharedPreferences("USER", Context.MODE_PRIVATE)
+            .getString("target_language", "").toString()
 
+        if (currentIndex >= trainingWordsList.size) return
+
+        val wordBatch = trainingWordsList.subList(
+            currentIndex,
+            minOf(currentIndex + 2, trainingWordsList.size)
+        )
+
+        val confidenceBatch = wordBatch.map { trainingWords[it] }
+
+        trainingViewModel.getTraining(wordBatch, targetLanguage, confidenceBatch as List<Double>)
+    }
+
+    private fun retrieveUser() {
         val gson = Gson()
         val url = "https://gaston-distant-unamicably.ngrok-free.dev/user/$email"
 
@@ -114,6 +145,9 @@ class TrainingActivity : AppCompatActivity() {
 
         val adapter = ChallengeTrainingRecyclerViewAdapter(translationMap,
             feedbackMap,
+            isDataReady = {
+                trainingQueue.isNotEmpty() && feedbackMap.isNotEmpty()
+            },
             displayExerciseListDialog = {
                displayExerciseListDialog()
             })
@@ -191,11 +225,15 @@ class TrainingActivity : AppCompatActivity() {
     }
 
     private fun displaySpeakingDialog(onResult: (Boolean) -> Unit) {
+        val currentItem = trainingQueue.peek()
+
         val view = LayoutInflater.from(this).inflate(R.layout.dialog_speaking, null)
 
         val tvWord = view.findViewById<TextView>(R.id.textview_translation_speaking)
         val btnPlay = view.findViewById<ImageButton>(R.id.button_play_speaking)
         val btnRecord = view.findViewById<ImageButton>(R.id.button_record_speaking)
+
+        tvWord.text = currentItem.speakingText
 
         val dialog = AlertDialog.Builder(this)
             .setTitle("Listen and repeat")
@@ -203,27 +241,33 @@ class TrainingActivity : AppCompatActivity() {
             .create()
 
         btnPlay.setOnClickListener {
-            //TODO
+            playAudioFromBase64(currentItem.speakingAudio!!)
         }
 
         btnRecord.setOnClickListener {
-            //TODO
-            dialog.dismiss()
-            onResult(true)
+            startRecording()
+            stopRecording(currentItem.speakingText, currentItem.word)
         }
 
         dialog.show()
     }
 
     private fun displayListeningDialog(onResult: (Boolean) -> Unit) {
+        val currentItem = trainingQueue.peek()
+
         val view = LayoutInflater.from(this).inflate(R.layout.dialog_listening, null)
 
         val chipGroup = view.findViewById<ChipGroup>(R.id.chipGroup_listening)
         val btnPlay = view.findViewById<ImageButton>(R.id.button_play_speaking)
         val btnSubmit = view.findViewById<Button>(R.id.button_submit_listening)
 
-        val correctWords = listOf("correct", "right")
-        val options = listOf("incorrect", "wrong", "correct", "false", "right").shuffled()
+        val test: String = "bomba, claart"
+        test.split(",")
+
+        val correctWords = currentItem.listeningText.split(" ")
+        val fluffWords = currentItem.listeningFluffWords
+
+        val options = (correctWords + fluffWords).shuffled()
 
         val dialog = AlertDialog.Builder(this)
             .setTitle("Select the words you hear")
@@ -231,7 +275,7 @@ class TrainingActivity : AppCompatActivity() {
             .create()
 
         btnPlay.setOnClickListener {
-            //TODO
+            playAudioFromBase64(currentItem.listeningAudio!!)
         }
 
         options.forEach { word ->
@@ -276,6 +320,8 @@ class TrainingActivity : AppCompatActivity() {
     }
 
     private fun displayReadingDialog(onResult: (Boolean) -> Unit) {
+        val currentItem = trainingQueue.peek()
+
         val view = LayoutInflater.from(this).inflate(R.layout.dialog_reading, null)
 
         val layoutAnswer = view.findViewById<LinearLayout>(R.id.layoutAnswer_reading)
@@ -289,6 +335,11 @@ class TrainingActivity : AppCompatActivity() {
         val etAnswer = view.findViewById<EditText>(R.id.editText_reading_input)
         val btnSubmit = view.findViewById<Button>(R.id.button_submit_reading)
 
+        tvTranslation.text = currentItem.readingText
+        tvEnglish.text = currentItem.readingAnswer
+
+        tvQuestionTranslation.text = currentItem.readingText
+
         val dialog = AlertDialog.Builder(this)
             .setTitle("Read and answer")
             .setView(view)
@@ -300,8 +351,10 @@ class TrainingActivity : AppCompatActivity() {
         }
 
         btnSubmit.setOnClickListener {
-            onResult(true)
-            dialog.dismiss()
+            if (etAnswer.text.toString() == currentItem.readingAnswer) {
+                onResult(true)
+                dialog.dismiss()
+            }
         }
 
         dialog.show()
@@ -312,6 +365,9 @@ class TrainingActivity : AppCompatActivity() {
 
         if (allDone) {
             parentDialog.dismiss()
+
+            trainingQueue.remove()
+            currentIndex++
 
             layoutManager.isScrollEnabled = true
 
@@ -326,13 +382,96 @@ class TrainingActivity : AppCompatActivity() {
             completedExercises["listening"] = false
             completedExercises["reading"] = false
 
-            progressBar.progress += 1
-            tvCounter.text = "${progressBar.progress}/${trainingWords.size}"
+            if (trainingQueue.size < 2) {
+                fetchNextBatchWords()
+            }
+
+            progressBar.progress = currentIndex
+            tvCounter.text = "${currentIndex}/${trainingWords.size}"
 
             if (progressBar.progress >= trainingWords.size) {
                 toResultScreen()
             }
         }
+    }
+
+    private fun retrieveFeedback(word: String) {
+        val feedbackList = mutableListOf<String>()
+
+        for (i in 0 until user!!.scores.size) {
+            val score = user!!.scores[i]
+            if (score.engWord == word) {
+                feedbackList.add(score.feedback)
+            }
+        }
+
+        val jsonArray = JSONArray(feedbackList)
+        val feedbackJsonArray = jsonArray.toString()
+
+        feedbackViewModel.getFeedback(feedbackJsonArray)
+    }
+
+    private fun observeFeedbackViewModel() {
+        feedbackViewModel.feedbackResult.observe(this) { response ->
+            Log.d("OllamaFeedback", response.feedback)
+            feedbackMap.put(trainingWordsList[currentIndex], response.feedback)
+            findViewById<RecyclerView>(R.id.rv_challenge_training).adapter?.notifyDataSetChanged()
+        }
+
+        feedbackViewModel.errorMessage.observe(this) { error ->
+            android.app.AlertDialog.Builder(this)
+                .setTitle("Error")
+                .setMessage(error ?: "Unknown error")
+                .setPositiveButton("OK", null)
+                .show()
+        }
+    }
+
+    private fun observeTrainingViewModel() {
+        trainingViewModel.trainingResult.observe(this) { response ->
+            Log.d("TrainingResult", response.results.toString())
+            response.results.forEach {
+                trainingQueue.add(
+                    TrainingItem(
+                        it.word,
+                        it.translation,
+                        it.speaking_text,
+                        it.speaking_pronunciation_audio_base64,
+                        it.listening_text,
+                        it.listening_fluff_words,
+                        it.listening_pronunciation_audio_base64,
+                        it.reading_text,
+                        it.reading_answer
+                    )
+                )
+            }
+            updateRecyclerView()
+        }
+    }
+
+    private fun observeGradingViewModel() {
+        gradingViewModel.gradingResult.observe(this) { response ->
+            Log.d("GradeResult", response.result)
+            Log.d("BKTResult", response.new_confidence_mastered.toString())
+        }
+
+        gradingViewModel.errorMessage.observe(this) { error ->
+            android.app.AlertDialog.Builder(this)
+                .setTitle("Error")
+                .setMessage(error ?: "Unknown error")
+                .setPositiveButton("OK", null)
+                .show()
+        }
+    }
+
+    private fun updateRecyclerView() {
+        val currentItem = trainingQueue.peek()
+
+        translationMap.clear()
+        translationMap[currentItem.word] = currentItem.translation
+        findViewById<RecyclerView>(R.id.rv_challenge_training).adapter?.notifyDataSetChanged()
+
+        retrieveFeedback(currentItem.word)
     }
 
     private fun playAudioFromBase64(base64Audio: String) {

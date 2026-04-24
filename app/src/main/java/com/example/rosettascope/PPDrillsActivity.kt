@@ -138,7 +138,7 @@ class PPDrillsActivity : AppCompatActivity() {
                     Log.e("VolleyRequest", error.toString())
                 })
             getAudioBase64Request.retryPolicy = DefaultRetryPolicy(
-                    30000,
+                    300000,
             DefaultRetryPolicy.DEFAULT_MAX_RETRIES,
             DefaultRetryPolicy.DEFAULT_BACKOFF_MULT
             )

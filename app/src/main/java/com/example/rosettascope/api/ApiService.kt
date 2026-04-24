@@ -38,6 +38,28 @@ data class FeedbackResponse(
     val feedback: String
 )
 
+data class TrainingRequest(
+    val trainingWord: List<String>,
+    val targetLanguage: String,
+    val confidenceMastered: List<Double>,
+)
+
+data class TrainingResponse(
+    val word: String,
+    val translation: String,
+    val speaking_text: String,
+    val speaking_pronunciation_audio_base64: String? = null,
+    val listening_text: String,
+    val listening_fluff_words: List<String>,
+    val listening_pronunciation_audio_base64: String? = null,
+    val reading_text: String,
+    val reading_answer: String,
+)
+
+data class TrainingBatchResponse(
+    val results: List<TrainingResponse>
+)
+
 
 interface ApiService {
     @POST("/translate")
@@ -48,4 +70,7 @@ interface ApiService {
 
     @POST("/feedback")
     suspend fun getFeedback(@Body request: FeedbackRequest): FeedbackResponse
+
+    @POST("/training")
+    suspend fun getTraining(@Body request: TrainingRequest): TrainingBatchResponse
 }
