@@ -1,6 +1,7 @@
 package com.example.rosettascope
 
 import android.content.Context
+import android.content.DialogInterface
 import android.content.Intent
 import android.media.MediaPlayer
 import android.media.MediaRecorder
@@ -23,13 +24,17 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.setPadding
 import androidx.recyclerview.widget.PagerSnapHelper
 import androidx.recyclerview.widget.RecyclerView
 import com.android.volley.Request
 import com.android.volley.toolbox.JsonObjectRequest
 import com.android.volley.toolbox.Volley
 import com.example.rosettascope.adapters.ChallengeTrainingRecyclerViewAdapter
+import com.example.rosettascope.adapters.ScoreRecyclerViewAdapter
 import com.example.rosettascope.helpers.LockableLinearLayoutManager
+import com.example.rosettascope.helpers.ScoreRequest
+import com.example.rosettascope.models.Score
 import com.example.rosettascope.models.TrainingItem
 import com.example.rosettascope.models.User
 import com.example.rosettascope.viewmodels.FeedbackViewModel
@@ -39,6 +44,8 @@ import com.google.android.material.chip.Chip
 import com.google.android.material.chip.ChipGroup
 import com.google.gson.Gson
 import org.json.JSONArray
+import org.json.JSONException
+import org.json.JSONObject
 import java.io.File
 import java.io.IOException
 import java.util.LinkedList
@@ -67,6 +74,9 @@ class TrainingActivity : AppCompatActivity() {
     private var currentIndex = 0
     private lateinit var trainingWordsList: List<String>
     private val trainingQueue: Queue<TrainingItem> = LinkedList<TrainingItem>()
+    private var loadingDialog: AlertDialog? = null
+    private var speakingDialog: AlertDialog? = null
+    private lateinit var speakingResultCallback: ((Boolean) -> Unit)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -194,6 +204,7 @@ class TrainingActivity : AppCompatActivity() {
 
         btnSpeaking.setOnClickListener {
             displaySpeakingDialog { isComplete ->
+                playResultAudio(isComplete)
                 if (isComplete) {
                     completedExercises["speaking"] = true
                     btnSpeaking.isEnabled = false
@@ -204,6 +215,7 @@ class TrainingActivity : AppCompatActivity() {
         }
         btnListening.setOnClickListener {
             displayListeningDialog { isComplete ->
+                playResultAudio(isComplete)
                 if (isComplete) {
                     completedExercises["listening"] = true
                     btnListening.isEnabled = false
@@ -214,6 +226,7 @@ class TrainingActivity : AppCompatActivity() {
         }
         btnReading.setOnClickListener {
             displayReadingDialog { isComplete ->
+                playResultAudio(isComplete)
                 if (isComplete) {
                     completedExercises["reading"] = true
                     btnReading.isEnabled = false
@@ -227,6 +240,10 @@ class TrainingActivity : AppCompatActivity() {
     private fun displaySpeakingDialog(onResult: (Boolean) -> Unit) {
         val currentItem = trainingQueue.peek()
 
+        var recording = false
+
+        speakingResultCallback = onResult
+
         val view = LayoutInflater.from(this).inflate(R.layout.dialog_speaking, null)
 
         val tvWord = view.findViewById<TextView>(R.id.textview_translation_speaking)
@@ -235,21 +252,34 @@ class TrainingActivity : AppCompatActivity() {
 
         tvWord.text = currentItem.speakingText
 
-        val dialog = AlertDialog.Builder(this)
+        speakingDialog = AlertDialog.Builder(this)
             .setTitle("Listen and repeat")
             .setView(view)
             .create()
+
 
         btnPlay.setOnClickListener {
             playAudioFromBase64(currentItem.speakingAudio!!)
         }
 
         btnRecord.setOnClickListener {
-            startRecording()
-            stopRecording(currentItem.speakingText, currentItem.word)
+            recording = !recording
+            if (!recording) {
+                stopRecording(currentItem.speakingText,  currentItem.word)
+                btnRecord.setBackgroundResource(R.drawable.bg_text2)
+                btnRecord.setImageResource(R.drawable.microphone)
+                btnRecord.setPadding(16)
+            }
+            else {
+                startRecording()
+                btnRecord.setBackgroundResource(R.drawable.bg_text3)
+                btnRecord.setImageResource(R.drawable.recording)
+                btnRecord.setPadding(16)
+
+            }
         }
 
-        dialog.show()
+        speakingDialog?.show()
     }
 
     private fun displayListeningDialog(onResult: (Boolean) -> Unit) {
@@ -260,9 +290,6 @@ class TrainingActivity : AppCompatActivity() {
         val chipGroup = view.findViewById<ChipGroup>(R.id.chipGroup_listening)
         val btnPlay = view.findViewById<ImageButton>(R.id.button_play_speaking)
         val btnSubmit = view.findViewById<Button>(R.id.button_submit_listening)
-
-        val test: String = "bomba, claart"
-        test.split(",")
 
         val correctWords = currentItem.listeningText.split(" ")
         val fluffWords = currentItem.listeningFluffWords
@@ -308,12 +335,17 @@ class TrainingActivity : AppCompatActivity() {
             }
 
             val isCorrect = selected.size == correctWords.size && selected.containsAll(correctWords)
+            onResult(isCorrect)
 
             if (isCorrect) {
-                onResult(true)
                 dialog.dismiss()
             }
-            dialog.dismiss()
+            else {
+                for (i in 0 until chipGroup.childCount) {
+                    val chip = chipGroup.getChildAt(i) as Chip
+                    chip.isChecked = false
+                }
+            }
         }
 
         dialog.show()
@@ -351,13 +383,179 @@ class TrainingActivity : AppCompatActivity() {
         }
 
         btnSubmit.setOnClickListener {
-            if (etAnswer.text.toString() == currentItem.readingAnswer) {
-                onResult(true)
+
+            val isCorrect = etAnswer.text.toString().lowercase() == currentItem.readingAnswer.lowercase()
+            onResult(isCorrect)
+
+            if (isCorrect) {
                 dialog.dismiss()
+            }
+            else {
+                etAnswer.text.clear()
+                layoutAnswer.visibility = View.VISIBLE
+                layoutInput.visibility = View.GONE
             }
         }
 
         dialog.show()
+    }
+
+    private fun showGradeLoadingDialog() {
+        val builder = AlertDialog.Builder(this)
+        builder.setTitle("Grading pronunciation...")
+        builder.setView(R.layout.dialog_circular_progress)
+        builder.setCancelable(false)
+        loadingDialog = builder.create()
+        loadingDialog?.show()
+    }
+
+    private fun hideLoadingDialog() {
+        loadingDialog?.dismiss()
+    }
+
+    private fun showGradeDialog(jsonResult: String, feedback: String, newConfidenceMastered: Double) {
+        val currentItem = trainingQueue.peek()
+
+        val view = LayoutInflater.from(this).inflate(R.layout.dialog_grade, null)
+
+        val layoutAudio: LinearLayout = view.findViewById(R.id.layout_word_pronun)
+        val layoutMastery: LinearLayout = view.findViewById(R.id.layout_mastery)
+        val labelProgress: TextView = view.findViewById(R.id.label_progress)
+
+        layoutAudio.visibility = View.GONE
+        layoutMastery.visibility = View.GONE
+        labelProgress.visibility = View.GONE
+
+        val tvFeedback: TextView = view.findViewById(R.id.textview_feedback)
+
+        val pbAccuracy: ProgressBar = view.findViewById(R.id.pb_accuracy)
+        val pbFluency: ProgressBar = view.findViewById(R.id.pb_fluency)
+        val pbCompleteness: ProgressBar = view.findViewById(R.id.pb_completeness)
+        val pbPron: ProgressBar = view.findViewById(R.id.pb_pron)
+
+        val tvAccuracyScore: TextView = view.findViewById(R.id.textview_accuracyscore)
+        val tvFluencyScore: TextView = view.findViewById(R.id.textview_fluencyscore)
+        val tvCompletenessScore: TextView = view.findViewById(R.id.textview_completenessscore)
+        val tvPronScore: TextView = view.findViewById(R.id.textview_pronscore)
+
+        val rvSyllables: RecyclerView = view.findViewById(R.id.rv_scores)
+
+        val result: JSONObject = JSONObject(jsonResult)
+        val nBest: JSONArray = result.getJSONArray("NBest")
+        val scores: JSONObject = nBest.getJSONObject(0).getJSONObject("PronunciationAssessment")
+
+        val words: JSONArray = nBest.getJSONObject(0).getJSONArray("Words")
+        val scoreList: List<Score> = populateScoreList(words)
+        rvSyllables.adapter = ScoreRecyclerViewAdapter(scoreList)
+
+        val accuracyScore: Int = scores.getDouble("AccuracyScore").toInt()
+        val fluencyScore: Int = scores.getDouble("FluencyScore").toInt()
+        val completenessScore: Int = scores.getDouble("CompletenessScore").toInt()
+        val pronScore: Int = scores.getDouble("PronScore").toInt()
+
+        tvFeedback.text = feedback
+
+        when (accuracyScore) {
+            in 0..50 -> {
+                pbAccuracy.progressDrawable = resources.getDrawable(R.drawable.custom_progress_red)
+            }
+            in 51..89 -> {
+                pbAccuracy.progressDrawable =
+                    resources.getDrawable(R.drawable.custom_progress_yellow)
+            }
+            else -> {
+                pbAccuracy.progressDrawable =
+                    resources.getDrawable(R.drawable.custom_progress_green)
+            }
+        }
+
+        when (fluencyScore) {
+            in 0..50 -> {
+                pbFluency.progressDrawable = resources.getDrawable(R.drawable.custom_progress_red)
+            }
+            in 51..89 -> {
+                pbFluency.progressDrawable =
+                    resources.getDrawable(R.drawable.custom_progress_yellow)
+            }
+            else -> {
+                pbFluency.progressDrawable =
+                    resources.getDrawable(R.drawable.custom_progress_green)
+            }
+        }
+
+        when (completenessScore) {
+            in 0..50 -> {
+                pbCompleteness.progressDrawable = resources.getDrawable(R.drawable.custom_progress_red)
+            }
+            in 51..89 -> {
+                pbCompleteness.progressDrawable =
+                    resources.getDrawable(R.drawable.custom_progress_yellow)
+            }
+            else -> {
+                pbCompleteness.progressDrawable =
+                    resources.getDrawable(R.drawable.custom_progress_green)
+            }
+        }
+
+        when (pronScore) {
+            in 0..50 -> {
+                pbPron.progressDrawable = resources.getDrawable(R.drawable.custom_progress_red)
+            }
+            in 51..89 -> {
+                pbPron.progressDrawable =
+                    resources.getDrawable(R.drawable.custom_progress_yellow)
+            }
+            else -> {
+                pbPron.progressDrawable =
+                    resources.getDrawable(R.drawable.custom_progress_green)
+            }
+        }
+
+        pbAccuracy.setProgress(accuracyScore.toString().toInt(), true)
+        pbFluency.setProgress(fluencyScore.toString().toInt(), true)
+        pbCompleteness.setProgress(completenessScore.toString().toInt(), true)
+        pbPron.setProgress(pronScore.toString().toInt(), true)
+
+        tvAccuracyScore.text = "Accuracy Score: $accuracyScore"
+        tvFluencyScore.text = "Fluency Score: $fluencyScore"
+        tvCompletenessScore.text = "Completeness Score: $completenessScore"
+        tvPronScore.text = "Overall Score: $pronScore"
+
+        val dialog = android.app.AlertDialog.Builder(this)
+            .setTitle("Pronunciation Assessment")
+            .setView(view)
+            .setNegativeButton("Continue", DialogInterface.OnClickListener() { dialog, _ ->
+//                saveScoreToDB(currentItem.speakingText, pronScore, newConfidenceMastered, feedback)
+                dialog.dismiss()
+            })
+            .create()
+            .show()
+    }
+
+    private fun populateScoreList(words: JSONArray) : List<Score> {
+        val scores = mutableListOf<Score>()
+
+        for (i in 0 until words.length()) {
+            val wordObject = words.getJSONObject(i)
+            val word = wordObject.getString("Word")
+            var score = try {
+                wordObject.getJSONObject("PronunciationAssessment").getDouble("AccuracyScore").toInt()
+            } catch (e: JSONException) {
+                0
+            }
+            scores.add(
+                Score(
+                    null,
+                    word,
+                    user!!.targetLanguage,
+                    score,
+                    "",
+                    System.currentTimeMillis(),
+                    ""
+                )
+            )
+        }
+        return scores
     }
 
     private fun checkAllExercisesDone(parentDialog: AlertDialog) {
@@ -451,6 +649,14 @@ class TrainingActivity : AppCompatActivity() {
 
     private fun observeGradingViewModel() {
         gradingViewModel.gradingResult.observe(this) { response ->
+            hideLoadingDialog()
+            val isCorrect = response.is_correct == "True"
+            speakingResultCallback?.invoke(isCorrect)
+            if (isCorrect) {
+                speakingDialog?.dismiss()
+
+            }
+            showGradeDialog(response.result, response.feedback, response.new_confidence_mastered)
             Log.d("GradeResult", response.result)
             Log.d("BKTResult", response.new_confidence_mastered.toString())
         }
@@ -473,6 +679,50 @@ class TrainingActivity : AppCompatActivity() {
 
         retrieveFeedback(currentItem.word)
     }
+
+//    private fun saveScoreToDB(word: String, score: Int, confidenceScore: Double, feedback: String) {
+//        val currentItem = trainingQueue.peek()
+//
+//        val gson = Gson()
+//        val queue = Volley.newRequestQueue(this)
+//        val url = "https://gaston-distant-unamicably.ngrok-free.dev/add-score"
+//
+//        val scoreRequest = ScoreRequest(
+//            user!!.email,
+//            word,
+//            user!!.targetLanguage,
+//            score,
+//            currentItem.word,
+//            System.currentTimeMillis(),
+//            feedback,
+//            confidenceScore
+//        )
+//
+//        val userScore = Score(null, word, user!!.targetLanguage, score, currentItem.word, System.currentTimeMillis(), feedback)
+//        user!!.scores.add(userScore)
+//
+//        if (confidenceScore > 0.95) {
+//            user!!.wordsMastered += 1
+//        }
+//
+//        val json = JSONObject(gson.toJson(scoreRequest))
+//
+//        val saveScoreRequest = JsonObjectRequest(
+//            Request.Method.POST, url, json,
+//            { response ->
+//                Log.d("JavaDB", "Score saved")
+//            }, {
+//                    error ->
+//                Toast.makeText(
+//                    this,
+//                    "Error connecting to server",
+//                    Toast.LENGTH_SHORT
+//                )
+//                    .show()
+//                Log.e("VolleyRequest", error.toString())
+//            })
+//        queue.add(saveScoreRequest)
+//    }
 
     private fun playAudioFromBase64(base64Audio: String) {
         val audioBytes = android.util.Base64.decode(base64Audio, android.util.Base64.DEFAULT)
@@ -529,12 +779,12 @@ class TrainingActivity : AppCompatActivity() {
         val bytes = file.readBytes()
         Log.d("MediaRecorder", "Recording saved to ${file.absolutePath}")
         val bytesString = android.util.Base64.encodeToString(bytes, android.util.Base64.NO_WRAP)
-
         gradingViewModel.gradeSpeech(refText,
             user?.targetLanguage.toString(),
             bytesString,
             user?.confidenceScores[engWord]!!
         )
+        showGradeLoadingDialog()
     }
 
     private fun playResultAudio(isCorrect: Boolean) {
