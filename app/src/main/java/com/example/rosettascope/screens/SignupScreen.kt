@@ -177,7 +177,16 @@ fun SignupScreen(modifier: Modifier = Modifier, navController: NavController) {
                 val queue = Volley.newRequestQueue(context)
                 val url = "https://gaston-distant-unamicably.ngrok-free.dev/signup"
 
-                val user = User(email, password,  targetLanguage, 0, 0, ArrayList(), mutableMapOf())
+                val user = User(
+                    email,
+                    password,
+                    targetLanguage,
+                    0,
+                    0,
+                    ArrayList(),
+                    mutableMapOf(),
+                    0
+                    )
                 val userJsonBody = gson.toJson(user)
 
                 val signUpRequest = JsonObjectRequest(Request.Method.POST, url, JSONObject(userJsonBody),

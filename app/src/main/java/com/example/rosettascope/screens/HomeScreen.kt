@@ -70,7 +70,7 @@ fun HomeScreen(modifier: Modifier = Modifier, viewModel: UserViewModel = viewMod
             .verticalScroll(rememberScrollState())
     ) {
         UserGreeting()
-        StreakDisplay()
+        StreakDisplay(viewModel)
         ActivityButtons(viewModel)
     }
 }
@@ -129,7 +129,21 @@ fun UserGreeting() {
 }
 
 @Composable
-fun StreakDisplay() {
+fun StreakDisplay(viewModel: UserViewModel) {
+    if (viewModel.user == null) {
+        return
+    }
+
+    var streakDrawable : Painter? = null
+
+
+    streakDrawable = when (viewModel.user?.currentStreak) {
+        0 -> painterResource(R.drawable.no_streak)
+        in 1..5 -> painterResource(R.drawable.low_streak)
+        in 6..10 -> painterResource(R.drawable.medium_streak)
+        else -> painterResource(R.drawable.high_streak)
+    }
+
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -138,15 +152,14 @@ fun StreakDisplay() {
             modifier = Modifier
                 .size(55.dp)
                 .padding(top = 16.dp),
-            //TODO get streak from server
-            painter = painterResource(id = R.drawable.no_streak),
+            painter = streakDrawable,
             contentDescription = "Streak badge")
 
         Box(modifier = Modifier
             .fillMaxWidth()
             .padding(top = 34.dp)
         ) {
-            Text(text = "0",
+            Text(text = viewModel.user?.currentStreak.toString(),
                 color = Color.White,
                 fontSize = 20.sp,
                 fontWeight = FontWeight.SemiBold

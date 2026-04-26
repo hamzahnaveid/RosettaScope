@@ -56,6 +56,7 @@ import com.android.volley.toolbox.HttpHeaderParser
 import com.android.volley.toolbox.JsonObjectRequest
 import com.android.volley.toolbox.StringRequest
 import com.android.volley.toolbox.Volley
+import com.example.rosettascope.HomeActivity
 import com.example.rosettascope.R
 import com.example.rosettascope.ResultsActivity
 import com.example.rosettascope.adapters.ChallengeWordsRecyclerViewAdapter
@@ -220,6 +221,14 @@ class CameraFragment : Fragment(), ObjectDetectorHelper.DetectorListener {
         else {
             val bannerDiscovery = fragmentCameraBinding.discoverBanner
             bannerDiscovery.visibility = View.VISIBLE
+
+            val fabHome = fragmentCameraBinding.floatingActionButtonHome
+            fabHome.visibility = View.VISIBLE
+
+            fabHome.setOnClickListener {
+                val intent = Intent(activity, HomeActivity::class.java)
+                startActivity(intent)
+            }
         }
 
         // Initialize our background executor

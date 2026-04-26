@@ -86,12 +86,14 @@ fun ProfileScreen(modifier: Modifier = Modifier, viewModel: UserViewModel = view
 
 @Composable
 fun ProfileHeader(user: User) {
-    val streak = 0 //todo get streak from server
-    val streakDrawable = when (streak) {
-        in 1..3 -> R.drawable.low_streak
-        in 4..7 -> R.drawable.medium_streak
-        in 8..30 -> R.drawable.high_streak
-        else -> R.drawable.no_streak
+    val streak = user.currentStreak
+    var streakDrawable : Painter? = null
+
+    streakDrawable = when (user.currentStreak) {
+        0 -> painterResource(R.drawable.no_streak)
+        in 1..5 -> painterResource(R.drawable.low_streak)
+        in 6..10 -> painterResource(R.drawable.medium_streak)
+        else -> painterResource(R.drawable.high_streak)
     }
 
     Column(
@@ -111,7 +113,7 @@ fun ProfileHeader(user: User) {
         ) {
 
             Image(
-                painter = painterResource(streakDrawable),
+                painter = streakDrawable,
                 contentDescription = null,
                 modifier = Modifier.size(48.dp)
             )
