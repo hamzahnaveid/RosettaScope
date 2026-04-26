@@ -7,9 +7,10 @@ import android.widget.Button
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
 import com.example.rosettascope.R
+import com.example.rosettascope.models.TrainingItem
 
 class ChallengeTrainingRecyclerViewAdapter (
-    private val translationMap: Map<String, String>,
+    private val trainingItems: List<TrainingItem>,
     private val feedbackMap: Map<String, String>,
     private val isDataReady: () -> Boolean,
     private val displayExerciseListDialog: () -> Unit
@@ -20,8 +21,10 @@ class ChallengeTrainingRecyclerViewAdapter (
     }
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
-        val word = translationMap.keys.elementAt(position)
-        val translation = translationMap[word] ?: "Loading translation..."
+        val item = trainingItems[position]
+
+        val word = item.word
+        val translation = item.translation ?: "Loading translation..."
         val feedback = feedbackMap[word] ?: "Loading initial feedback..."
 
         holder.tvTranslation.text = translation
@@ -40,7 +43,7 @@ class ChallengeTrainingRecyclerViewAdapter (
     }
 
     override fun getItemCount(): Int {
-        return translationMap.keys.size
+        return trainingItems.size
     }
 
     inner class ViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {

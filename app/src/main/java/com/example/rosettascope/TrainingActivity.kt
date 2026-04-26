@@ -29,6 +29,7 @@ import androidx.recyclerview.widget.PagerSnapHelper
 import androidx.recyclerview.widget.RecyclerView
 import com.android.volley.Request
 import com.android.volley.toolbox.JsonObjectRequest
+import com.android.volley.toolbox.StringRequest
 import com.android.volley.toolbox.Volley
 import com.example.rosettascope.adapters.ChallengeTrainingRecyclerViewAdapter
 import com.example.rosettascope.adapters.ScoreRecyclerViewAdapter
@@ -57,7 +58,6 @@ class TrainingActivity : AppCompatActivity() {
     private var mediaPlayer: MediaPlayer? = null
     private var mediaRecorder: MediaRecorder? = null
     private var trainingWords = hashMapOf<String, Double>()
-    private var translationMap = mutableMapOf<String, String>()
     private var feedbackMap = mutableMapOf<String, String>()
     private var completedExercises = mutableMapOf<String, Boolean>()
     private val originalMap = mutableMapOf<String, Double>()
@@ -73,10 +73,14 @@ class TrainingActivity : AppCompatActivity() {
     private lateinit var email: String
     private var currentIndex = 0
     private lateinit var trainingWordsList: List<String>
+    private val trainingItems = mutableListOf<TrainingItem>()
     private val trainingQueue: Queue<TrainingItem> = LinkedList<TrainingItem>()
     private var loadingDialog: AlertDialog? = null
     private var speakingDialog: AlertDialog? = null
     private lateinit var speakingResultCallback: ((Boolean) -> Unit)
+    private val feedbackRequestQueue: Queue<String> = LinkedList()
+    private var isFeedbackLoading = false
+    private var currentFeedbackWord: String? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -153,7 +157,7 @@ class TrainingActivity : AppCompatActivity() {
     private fun setupRecyclerView() {
         val rvChallengeTraining: RecyclerView = findViewById(R.id.rv_challenge_training)
 
-        val adapter = ChallengeTrainingRecyclerViewAdapter(translationMap,
+        val adapter = ChallengeTrainingRecyclerViewAdapter(trainingItems,
             feedbackMap,
             isDataReady = {
                 trainingQueue.isNotEmpty() && feedbackMap.isNotEmpty()
@@ -338,6 +342,7 @@ class TrainingActivity : AppCompatActivity() {
             onResult(isCorrect)
 
             if (isCorrect) {
+                updateConfidenceScoreWhenCorrect()
                 dialog.dismiss()
             }
             else {
@@ -383,11 +388,11 @@ class TrainingActivity : AppCompatActivity() {
         }
 
         btnSubmit.setOnClickListener {
-
             val isCorrect = etAnswer.text.toString().lowercase() == currentItem.readingAnswer.lowercase()
             onResult(isCorrect)
 
             if (isCorrect) {
+                updateConfidenceScoreWhenCorrect()
                 dialog.dismiss()
             }
             else {
@@ -413,7 +418,7 @@ class TrainingActivity : AppCompatActivity() {
         loadingDialog?.dismiss()
     }
 
-    private fun showGradeDialog(jsonResult: String, feedback: String, newConfidenceMastered: Double) {
+    private fun showGradeDialog(jsonResult: String, feedback: String) {
         val currentItem = trainingQueue.peek()
 
         val view = LayoutInflater.from(this).inflate(R.layout.dialog_grade, null)
@@ -525,7 +530,7 @@ class TrainingActivity : AppCompatActivity() {
             .setTitle("Pronunciation Assessment")
             .setView(view)
             .setNegativeButton("Continue", DialogInterface.OnClickListener() { dialog, _ ->
-//                saveScoreToDB(currentItem.speakingText, pronScore, newConfidenceMastered, feedback)
+                saveScoreToDB(currentItem.speakingText, pronScore, feedback)
                 dialog.dismiss()
             })
             .create()
@@ -562,10 +567,17 @@ class TrainingActivity : AppCompatActivity() {
         val allDone = completedExercises.values.all { it }
 
         if (allDone) {
+            finalMap.put(trainingQueue.peek().word, user!!.confidenceScores[trainingQueue.peek().word]!!)
+
             parentDialog.dismiss()
 
             trainingQueue.remove()
             currentIndex++
+
+            val nextItem = trainingQueue.peek()
+            if (nextItem != null) {
+                retrieveFeedback(nextItem.word)
+            }
 
             layoutManager.isScrollEnabled = true
 
@@ -594,6 +606,19 @@ class TrainingActivity : AppCompatActivity() {
     }
 
     private fun retrieveFeedback(word: String) {
+        feedbackRequestQueue.add(word)
+        processNextFeedback()
+    }
+
+    private fun processNextFeedback() {
+        if (isFeedbackLoading) return
+        if (feedbackRequestQueue.isEmpty()) return
+
+        isFeedbackLoading = true
+
+        val word = feedbackRequestQueue.poll()
+        currentFeedbackWord = word
+
         val feedbackList = mutableListOf<String>()
 
         for (i in 0 until user!!.scores.size) {
@@ -604,16 +629,20 @@ class TrainingActivity : AppCompatActivity() {
         }
 
         val jsonArray = JSONArray(feedbackList)
-        val feedbackJsonArray = jsonArray.toString()
-
-        feedbackViewModel.getFeedback(feedbackJsonArray)
+        feedbackViewModel.getFeedback(jsonArray.toString())
     }
 
     private fun observeFeedbackViewModel() {
         feedbackViewModel.feedbackResult.observe(this) { response ->
-            Log.d("OllamaFeedback", response.feedback)
-            feedbackMap.put(trainingWordsList[currentIndex], response.feedback)
+            val word = currentFeedbackWord
+
+            feedbackMap[word.toString()] = response.feedback
             findViewById<RecyclerView>(R.id.rv_challenge_training).adapter?.notifyDataSetChanged()
+
+            isFeedbackLoading = false
+            currentFeedbackWord = null
+            processNextFeedback()
+            Log.d("OllamaFeedback", response.feedback)
         }
 
         feedbackViewModel.errorMessage.observe(this) { error ->
@@ -629,21 +658,22 @@ class TrainingActivity : AppCompatActivity() {
         trainingViewModel.trainingResult.observe(this) { response ->
             Log.d("TrainingResult", response.results.toString())
             response.results.forEach {
-                trainingQueue.add(
-                    TrainingItem(
-                        it.word,
-                        it.translation,
-                        it.speaking_text,
-                        it.speaking_pronunciation_audio_base64,
-                        it.listening_text,
-                        it.listening_fluff_words,
-                        it.listening_pronunciation_audio_base64,
-                        it.reading_text,
-                        it.reading_answer
-                    )
+                val item = TrainingItem(
+                    it.word,
+                    it.translation,
+                    it.speaking_text,
+                    it.speaking_pronunciation_audio_base64,
+                    it.listening_text,
+                    it.listening_fluff_words,
+                    it.listening_pronunciation_audio_base64,
+                    it.reading_text,
+                    it.reading_answer
                 )
+                trainingQueue.add(item)
+                trainingItems.add(item)
             }
-            updateRecyclerView()
+            findViewById<RecyclerView>(R.id.rv_challenge_training).adapter?.notifyDataSetChanged()
+            retrieveFeedback(trainingItems.last().word)
         }
     }
 
@@ -654,9 +684,10 @@ class TrainingActivity : AppCompatActivity() {
             speakingResultCallback?.invoke(isCorrect)
             if (isCorrect) {
                 speakingDialog?.dismiss()
-
+                user!!.confidenceScores[trainingQueue.peek().word] = response.new_confidence_mastered
+                Log.d("UserConfidenceScore", user!!.confidenceScores[trainingQueue.peek().word].toString())
             }
-            showGradeDialog(response.result, response.feedback, response.new_confidence_mastered)
+            showGradeDialog(response.result, response.feedback)
             Log.d("GradeResult", response.result)
             Log.d("BKTResult", response.new_confidence_mastered.toString())
         }
@@ -670,59 +701,42 @@ class TrainingActivity : AppCompatActivity() {
         }
     }
 
-    private fun updateRecyclerView() {
+    private fun saveScoreToDB(word: String, score: Int, feedback: String) {
         val currentItem = trainingQueue.peek()
 
-        translationMap.clear()
-        translationMap[currentItem.word] = currentItem.translation
-        findViewById<RecyclerView>(R.id.rv_challenge_training).adapter?.notifyDataSetChanged()
+        val gson = Gson()
+        val queue = Volley.newRequestQueue(this)
+        val url = "https://gaston-distant-unamicably.ngrok-free.dev/add-score"
 
-        retrieveFeedback(currentItem.word)
+        val scoreRequest = ScoreRequest(
+            user!!.email,
+            word,
+            user!!.targetLanguage,
+            score,
+            currentItem.word,
+            System.currentTimeMillis(),
+            feedback,
+            originalMap[currentItem.word]!!
+        )
+
+        val json = JSONObject(gson.toJson(scoreRequest))
+
+        val saveScoreRequest = JsonObjectRequest(
+            Request.Method.POST, url, json,
+            { response ->
+                Log.d("JavaDB", "Score saved")
+            }, {
+                    error ->
+                Toast.makeText(
+                    this,
+                    "Error connecting to server",
+                    Toast.LENGTH_SHORT
+                )
+                    .show()
+                Log.e("VolleyRequest", error.toString())
+            })
+        queue.add(saveScoreRequest)
     }
-
-//    private fun saveScoreToDB(word: String, score: Int, confidenceScore: Double, feedback: String) {
-//        val currentItem = trainingQueue.peek()
-//
-//        val gson = Gson()
-//        val queue = Volley.newRequestQueue(this)
-//        val url = "https://gaston-distant-unamicably.ngrok-free.dev/add-score"
-//
-//        val scoreRequest = ScoreRequest(
-//            user!!.email,
-//            word,
-//            user!!.targetLanguage,
-//            score,
-//            currentItem.word,
-//            System.currentTimeMillis(),
-//            feedback,
-//            confidenceScore
-//        )
-//
-//        val userScore = Score(null, word, user!!.targetLanguage, score, currentItem.word, System.currentTimeMillis(), feedback)
-//        user!!.scores.add(userScore)
-//
-//        if (confidenceScore > 0.95) {
-//            user!!.wordsMastered += 1
-//        }
-//
-//        val json = JSONObject(gson.toJson(scoreRequest))
-//
-//        val saveScoreRequest = JsonObjectRequest(
-//            Request.Method.POST, url, json,
-//            { response ->
-//                Log.d("JavaDB", "Score saved")
-//            }, {
-//                    error ->
-//                Toast.makeText(
-//                    this,
-//                    "Error connecting to server",
-//                    Toast.LENGTH_SHORT
-//                )
-//                    .show()
-//                Log.e("VolleyRequest", error.toString())
-//            })
-//        queue.add(saveScoreRequest)
-//    }
 
     private fun playAudioFromBase64(base64Audio: String) {
         val audioBytes = android.util.Base64.decode(base64Audio, android.util.Base64.DEFAULT)
@@ -800,6 +814,30 @@ class TrainingActivity : AppCompatActivity() {
         }
         mediaPlayer = MediaPlayer.create(this, resId)
         mediaPlayer?.start()
+    }
+
+    private fun updateConfidenceScoreWhenCorrect() {
+        val currentItem = trainingQueue.peek()
+
+        val queue = Volley.newRequestQueue(this)
+        val url = "https://subopaquely-unirradiative-bradley.ngrok-free.dev/update-bkt-score-challenge/${user!!.confidenceScores[currentItem.word]}/${true}"
+
+        val checkAnswerRequest = StringRequest(
+            Request.Method.GET, url,
+            { response ->
+                user!!.confidenceScores[currentItem.word] = response.toDouble()
+                Log.d("UserConfidenceScore", user!!.confidenceScores[currentItem.word].toString())
+            },
+            { error ->
+                Toast.makeText(
+                    this,
+                    "Error connecting to server",
+                    Toast.LENGTH_SHORT
+                )
+                    .show()
+                Log.e("VolleyRequest", error.toString())
+            })
+        queue.add(checkAnswerRequest)
     }
 
     private fun toResultScreen() {
