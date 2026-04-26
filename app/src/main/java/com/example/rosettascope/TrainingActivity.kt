@@ -21,6 +21,7 @@ import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
+import androidx.cardview.widget.CardView
 import androidx.core.content.ContextCompat
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
@@ -81,6 +82,7 @@ class TrainingActivity : AppCompatActivity() {
     private val feedbackRequestQueue: Queue<String> = LinkedList()
     private var isFeedbackLoading = false
     private var currentFeedbackWord: String? = null
+    private var fetchIndex = 0
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -106,7 +108,6 @@ class TrainingActivity : AppCompatActivity() {
         observeTrainingViewModel()
         observeGradingViewModel()
 
-        fetchNextBatchWords()
         retrieveUser()
 
         tvCounter.text = "${currentIndex}/${trainingWords.size}"
@@ -118,14 +119,13 @@ class TrainingActivity : AppCompatActivity() {
         val targetLanguage = getSharedPreferences("USER", Context.MODE_PRIVATE)
             .getString("target_language", "").toString()
 
-        if (currentIndex >= trainingWordsList.size) return
+        if (fetchIndex >= trainingWordsList.size) return
 
-        val wordBatch = trainingWordsList.subList(
-            currentIndex,
-            minOf(currentIndex + 2, trainingWordsList.size)
-        )
-
+        val end = minOf(fetchIndex + 2, trainingWordsList.size)
+        val wordBatch = trainingWordsList.subList(fetchIndex, end)
         val confidenceBatch = wordBatch.map { trainingWords[it] }
+
+        fetchIndex = end
 
         trainingViewModel.getTraining(wordBatch, targetLanguage, confidenceBatch as List<Double>)
     }
@@ -140,6 +140,7 @@ class TrainingActivity : AppCompatActivity() {
                 val json = response.toString()
                 user = gson.fromJson(json, User::class.java)
                 originalMap.putAll(user!!.confidenceScores)
+                fetchNextBatchWords()
                 Log.d("JavaDB", "User retrieved")
             },
             { error ->
@@ -342,7 +343,7 @@ class TrainingActivity : AppCompatActivity() {
             onResult(isCorrect)
 
             if (isCorrect) {
-                updateConfidenceScoreWhenCorrect()
+                updateConfidenceScoreWhenCorrect(currentItem.word)
                 dialog.dismiss()
             }
             else {
@@ -392,7 +393,7 @@ class TrainingActivity : AppCompatActivity() {
             onResult(isCorrect)
 
             if (isCorrect) {
-                updateConfidenceScoreWhenCorrect()
+                updateConfidenceScoreWhenCorrect(currentItem.word)
                 dialog.dismiss()
             }
             else {
@@ -639,6 +640,8 @@ class TrainingActivity : AppCompatActivity() {
             feedbackMap[word.toString()] = response.feedback
             findViewById<RecyclerView>(R.id.rv_challenge_training).adapter?.notifyDataSetChanged()
 
+            findViewById<CardView>(R.id.layoutLoading).visibility = View.GONE
+
             isFeedbackLoading = false
             currentFeedbackWord = null
             processNextFeedback()
@@ -673,7 +676,9 @@ class TrainingActivity : AppCompatActivity() {
                 trainingItems.add(item)
             }
             findViewById<RecyclerView>(R.id.rv_challenge_training).adapter?.notifyDataSetChanged()
-            retrieveFeedback(trainingItems.last().word)
+            response.results.forEach {
+                retrieveFeedback(it.word)
+            }
         }
     }
 
@@ -816,17 +821,15 @@ class TrainingActivity : AppCompatActivity() {
         mediaPlayer?.start()
     }
 
-    private fun updateConfidenceScoreWhenCorrect() {
-        val currentItem = trainingQueue.peek()
-
+    private fun updateConfidenceScoreWhenCorrect(word: String) {
         val queue = Volley.newRequestQueue(this)
-        val url = "https://subopaquely-unirradiative-bradley.ngrok-free.dev/update-bkt-score-challenge/${user!!.confidenceScores[currentItem.word]}/${true}"
+        val url = "https://subopaquely-unirradiative-bradley.ngrok-free.dev/update-bkt-score-challenge/${user!!.confidenceScores[word]}/${true}"
 
         val checkAnswerRequest = StringRequest(
             Request.Method.GET, url,
             { response ->
-                user!!.confidenceScores[currentItem.word] = response.toDouble()
-                Log.d("UserConfidenceScore", user!!.confidenceScores[currentItem.word].toString())
+                user!!.confidenceScores[word] = response.toDouble()
+                Log.d("UserConfidenceScore", user!!.confidenceScores[word].toString())
             },
             { error ->
                 Toast.makeText(
