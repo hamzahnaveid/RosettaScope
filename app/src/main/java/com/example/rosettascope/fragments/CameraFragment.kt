@@ -49,6 +49,7 @@ import androidx.fragment.app.activityViewModels
 import androidx.fragment.app.viewModels
 import androidx.navigation.Navigation
 import androidx.recyclerview.widget.RecyclerView
+import com.android.volley.DefaultRetryPolicy
 import com.android.volley.NetworkResponse
 import com.android.volley.Request
 import com.android.volley.Response
@@ -101,6 +102,8 @@ class CameraFragment : Fragment(), ObjectDetectorHelper.DetectorListener {
     private var mediaPlayer: MediaPlayer? = null
     private var mediaRecorder: MediaRecorder? = null
 
+    private val originalMap = mutableMapOf<String, Double>()
+    private val finalMap = mutableMapOf<String, Double>()
     private var challengeWordBank = mutableMapOf<String, Boolean>()
     private var challengeTranslatedWords = mutableMapOf<String, String>()
     private var challengeHints: String = "Loading hints..."
@@ -300,6 +303,9 @@ class CameraFragment : Fragment(), ObjectDetectorHelper.DetectorListener {
                         completeChallenge()
                         Log.d("Challenge", "Challenge Complete")
                     }
+
+                    finalMap[word + "/" + user!!.targetLanguage] = confidenceScore
+                    user!!.confidenceScores[word + "/" + user!!.targetLanguage] = confidenceScore
                 }
             }
         })
@@ -442,6 +448,7 @@ class CameraFragment : Fragment(), ObjectDetectorHelper.DetectorListener {
             hideLoadingDialog()
             Log.d("GradeResult", response.result)
             Log.d("BKTResult", response.new_confidence_mastered.toString())
+            finalMap[currentWord + "/" + user!!.targetLanguage] = response.new_confidence_mastered
             showGradeDialog(response.result, response.feedback, response.new_confidence_mastered)
         }
 
@@ -937,6 +944,13 @@ class CameraFragment : Fragment(), ObjectDetectorHelper.DetectorListener {
                 return Response.success(utf8String, HttpHeaderParser.parseCacheHeaders(response))
             }
         }
+
+        translateWordRequest.retryPolicy = DefaultRetryPolicy(
+            300000,
+            DefaultRetryPolicy.DEFAULT_MAX_RETRIES,
+            DefaultRetryPolicy.DEFAULT_BACKOFF_MULT
+        )
+
         queue.add(translateWordRequest)
     }
 
@@ -963,6 +977,13 @@ class CameraFragment : Fragment(), ObjectDetectorHelper.DetectorListener {
                     .show()
                 Log.e("VolleyRequest", error.toString())
             })
+
+        translateWordRequest.retryPolicy = DefaultRetryPolicy(
+            300000,
+            DefaultRetryPolicy.DEFAULT_MAX_RETRIES,
+            DefaultRetryPolicy.DEFAULT_BACKOFF_MULT
+        )
+
         queue.add(translateWordRequest)
     }
 
@@ -1012,8 +1033,18 @@ class CameraFragment : Fragment(), ObjectDetectorHelper.DetectorListener {
                 .setTitle("Quit Challenge?")
                 .setMessage("Are you sure you want to quit? You won't receive the full rewards.")
                 .setPositiveButton("Yes", DialogInterface.OnClickListener() { dialog, _ ->
+                    originalMap.putAll(user!!.confidenceScores)
+
+                    challengeWordBank.forEach { (key, value) ->
+                        if (value) {
+                            finalMap[key + "/" + user!!.targetLanguage] = (finalMap[key + "/" + user!!.targetLanguage] ?: 0.0) + 0.05
+                        }
+                    }
+
                     dialog.dismiss()
                     val intent = Intent(context, ResultsActivity::class.java)
+                    intent.putExtra("new_confidence_scores", finalMap as HashMap<String, Double>)
+                    intent.putExtra("user_confidence_scores", originalMap as HashMap<String, Double>)
                     context?.startActivity(intent)
                 })
                 .setNegativeButton("No", DialogInterface.OnClickListener() { dialog, _ ->
@@ -1023,7 +1054,17 @@ class CameraFragment : Fragment(), ObjectDetectorHelper.DetectorListener {
                 .show()
             return
         }
+        originalMap.putAll(user!!.confidenceScores)
+
+        challengeWordBank.forEach { (key, value) ->
+            if (value) {
+                finalMap[key + "/" + user!!.targetLanguage]!!.plus(0.05)
+            }
+        }
+
         val intent = Intent(context, ResultsActivity::class.java)
+        intent.putExtra("new_confidence_scores", finalMap as HashMap<String, Double>)
+        intent.putExtra("user_confidence_scores", originalMap as HashMap<String, Double>)
         context?.startActivity(intent)
     }
 
