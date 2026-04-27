@@ -44,6 +44,7 @@ import com.android.volley.toolbox.Volley
 import com.example.rosettascope.MainActivity
 import com.example.rosettascope.R
 import com.example.rosettascope.models.User
+import com.example.rosettascope.notifications.NotificationScheduler
 import com.example.rosettascope.viewmodels.UserViewModel
 import java.util.Calendar
 
@@ -141,6 +142,8 @@ fun SettingsCardContent(user: User) {
 
                     val hour = timeState.hour
                     val minute = timeState.minute
+
+                    NotificationScheduler().scheduleDaily(context, hour, minute)
 
                     Log.d("TimePicker", "Selected: $hour:$minute")
                 }
