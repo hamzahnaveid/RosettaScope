@@ -144,6 +144,11 @@ fun SettingsCardContent(user: User) {
                     val minute = timeState.minute
 
                     NotificationScheduler().scheduleDaily(context, hour, minute)
+                    Toast.makeText(
+                        context,
+                        "Notifications scheduled for $hour:$minute",
+                        Toast.LENGTH_SHORT
+                    ).show()
 
                     Log.d("TimePicker", "Selected: $hour:$minute")
                 }

@@ -9,6 +9,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -72,14 +73,13 @@ fun HomeScreen(modifier: Modifier = Modifier, viewModel: UserViewModel = viewMod
             .padding(16.dp)
             .verticalScroll(rememberScrollState())
     ) {
-        UserGreeting()
-        StreakDisplay(viewModel)
+        UserGreeting(viewModel)
         ActivityButtons(viewModel)
     }
 }
 
 @Composable
-fun UserGreeting() {
+fun UserGreeting(viewModel: UserViewModel) {
     val targetLanguage = LocalContext.current.getSharedPreferences("USER", Context.MODE_PRIVATE)
         .getString("target_language", "").toString()
 
@@ -89,26 +89,30 @@ fun UserGreeting() {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(top = 32.dp)
+            .padding(top = 32.dp),
+        verticalAlignment = Alignment.CenterVertically
     ) {
         Image(
-            modifier = Modifier
-                .width(55.dp)
-                .height(55.dp),
             painter = flagDrawable as Painter,
-            contentDescription = "Target language flag")
+            contentDescription = "Flag",
+            modifier = Modifier
+                .size(70.dp)
+        )
 
-        Box(modifier = Modifier
-            .fillMaxWidth()
-            .padding(start = 16.dp)
-            .height(40.dp)
-            .align(alignment = Alignment.CenterVertically)
+        Spacer(modifier = Modifier.width(16.dp))
+
+        Column(
+            modifier = Modifier.fillMaxWidth()
         ) {
-            Text(text = strLanguage!!,
+            Text(
+                text = strLanguage.toString(),
                 color = Color.White,
-                fontSize = 20.sp,
-                fontWeight = FontWeight.SemiBold
+                fontSize = 22.sp,
+                fontWeight = FontWeight.Bold
             )
+            Spacer(modifier = Modifier.height(8.dp))
+
+            StreakDisplay(viewModel)
         }
     }
 }
@@ -120,8 +124,6 @@ fun StreakDisplay(viewModel: UserViewModel) {
     }
 
     var streakDrawable : Painter? = null
-
-
     streakDrawable = when (viewModel.user?.currentStreak) {
         0 -> painterResource(R.drawable.no_streak)
         in 1..5 -> painterResource(R.drawable.low_streak)
@@ -135,14 +137,13 @@ fun StreakDisplay(viewModel: UserViewModel) {
     ) {
         Image(
             modifier = Modifier
-                .size(55.dp)
-                .padding(top = 16.dp),
+                .size(40.dp),
             painter = streakDrawable,
             contentDescription = "Streak badge")
 
         Box(modifier = Modifier
             .fillMaxWidth()
-            .padding(top = 34.dp)
+            .align(alignment = Alignment.CenterVertically)
         ) {
             Text(text = viewModel.user?.currentStreak.toString(),
                 color = Color.White,
