@@ -19,8 +19,12 @@ import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ElevatedCard
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.TimePicker
+import androidx.compose.material3.TimePickerState
+import androidx.compose.material3.rememberTimePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -41,6 +45,7 @@ import com.example.rosettascope.MainActivity
 import com.example.rosettascope.R
 import com.example.rosettascope.models.User
 import com.example.rosettascope.viewmodels.UserViewModel
+import java.util.Calendar
 
 @Preview(showBackground = true)
 @Composable
@@ -77,6 +82,7 @@ fun SettingsScreen(modifier: Modifier = Modifier, viewModel: UserViewModel = vie
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsCardContent(user: User) {
     val context = LocalContext.current
@@ -123,6 +129,54 @@ fun SettingsCardContent(user: User) {
             }
         }
 
+        val openTimePicker = remember { mutableStateOf(false) }
+
+        if (openTimePicker.value) {
+            SetTimePickerContent(
+                onDismiss = {
+                    openTimePicker.value = false
+                },
+                onConfirm = { timeState ->
+                    openTimePicker.value = false
+
+                    val hour = timeState.hour
+                    val minute = timeState.minute
+
+                    Log.d("TimePicker", "Selected: $hour:$minute")
+                }
+            )
+        }
+
+        Box {
+            ElevatedCard(
+                elevation = CardDefaults.cardElevation(8.dp),
+                modifier = Modifier
+                    .wrapContentHeight()
+                    .fillMaxWidth(),
+                onClick = {
+                    openTimePicker.value = true
+                }
+            ) {
+                Row(
+                    modifier = Modifier.padding(12.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    Image(
+                        painter = painterResource(R.drawable.clock),
+                        contentDescription = null,
+                        modifier = Modifier.size(48.dp)
+                    )
+                    Text(
+                        text = "Schedule notifications",
+                        fontSize = 18.sp,
+                        color = Color(0xFF69A1A6)
+                    )
+                }
+
+            }
+        }
+
         val openAlertDialog = remember { mutableStateOf(false) }
 
         if (openAlertDialog.value) {
@@ -166,6 +220,53 @@ fun SettingsCardContent(user: User) {
             }
         }
     }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun SetTimePickerContent(
+    onConfirm: (TimePickerState) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    val currentTime = Calendar.getInstance()
+
+    val timePickerState = rememberTimePickerState(
+        initialHour = currentTime.get(Calendar.HOUR_OF_DAY),
+        initialMinute = currentTime.get(Calendar.MINUTE),
+        is24Hour = true,
+    )
+
+    TimePickerDialog(
+        onDismiss = { onDismiss() },
+        onConfirmation = { onConfirm(timePickerState) }
+    ) {
+        TimePicker(
+            state = timePickerState
+        )
+    }
+}
+
+@Composable
+fun TimePickerDialog(
+    onDismiss: () -> Unit,
+    onConfirmation: () -> Unit,
+    content: @Composable () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        dismissButton = {
+            TextButton(onClick = { onDismiss() } ) {
+                Text("Cancel")
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = { onConfirmation() } ) {
+                Text("OK")
+            }
+        },
+        text = { content() }
+
+    )
 }
 
 @Composable
