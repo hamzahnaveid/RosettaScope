@@ -11,7 +11,8 @@ import com.example.rosettascope.R
 
 class ResultsRecyclerViewAdapter(
     private val resultsMap: Map<String, Double>,
-    private val userMap: Map<String, Double>
+    private val userMap: Map<String, Double>,
+    private val targetLanguage: String
 ) : RecyclerView.Adapter<ResultsRecyclerViewAdapter.ViewHolder>() {
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ResultsRecyclerViewAdapter.ViewHolder {
         val view = LayoutInflater.from(parent.context).inflate(R.layout.recycler_view_result_item, parent, false)
@@ -22,7 +23,7 @@ class ResultsRecyclerViewAdapter(
         val word = resultsMap.keys.elementAt(position)
         val confidenceScore = resultsMap.values.elementAt(position)
 
-        holder.tvWord.text = word
+        holder.tvWord.text = word.replace("/$targetLanguage", "")
 
         when (confidenceScore.times(100).toInt()) {
             in 0..24 -> {

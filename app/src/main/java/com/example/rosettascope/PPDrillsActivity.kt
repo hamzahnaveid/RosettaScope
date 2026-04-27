@@ -258,7 +258,7 @@ class PPDrillsActivity : AppCompatActivity() {
         gradingViewModel.gradeSpeech(refText,
             user?.targetLanguage.toString(),
             bytesString,
-            user?.confidenceScores[engWord]!!
+            user?.confidenceScores[engWord + "/" + user!!.targetLanguage]!!
         )
     }
 
@@ -282,7 +282,7 @@ class PPDrillsActivity : AppCompatActivity() {
 
             if (response.is_correct == "True") {
                 resultsMap[word] = true
-                finalMap[engWord] = response.new_confidence_mastered
+                finalMap[engWord + "/" + user!!.targetLanguage] = response.new_confidence_mastered
                 val rv = findViewById<RecyclerView>(R.id.rv_challenge_drill)
                 val layoutManager = rv.layoutManager as LockableLinearLayoutManager
                 rv.adapter?.notifyItemChanged(currentIndex)
@@ -306,7 +306,7 @@ class PPDrillsActivity : AppCompatActivity() {
             } else {
                 resultsMap[word] = false
                 // Don't penalize the user for incorrect answers in this activity
-                finalMap[engWord] = originalMap[engWord]!!
+                finalMap[engWord + "/" + user!!.targetLanguage] = originalMap[engWord + "/" + user!!.targetLanguage]!!
                 val rv = findViewById<RecyclerView>(R.id.rv_challenge_drill)
                 val layoutManager = rv.layoutManager as LockableLinearLayoutManager
                 rv.adapter?.notifyItemChanged(currentIndex)

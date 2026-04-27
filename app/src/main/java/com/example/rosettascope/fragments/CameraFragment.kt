@@ -261,8 +261,8 @@ class CameraFragment : Fragment(), ObjectDetectorHelper.DetectorListener {
             override fun onBoxTapped(word: String) {
                 var confidenceScore = 0.01
                 currentWord = word
-                if (user!!.confidenceScores.contains(word)) {
-                    confidenceScore = user!!.confidenceScores.get(word)!!
+                if (user!!.confidenceScores.contains(word + "/" + user!!.targetLanguage)) {
+                    confidenceScore = user!!.confidenceScores.get(word + "/" + user!!.targetLanguage)!!
                 }
                 translationViewModel.translateWord(word, user!!.targetLanguage.toString(), confidenceScore)
                 showTranslationLoadingDialog(word)
@@ -586,8 +586,8 @@ class CameraFragment : Fragment(), ObjectDetectorHelper.DetectorListener {
             }
         }
 
-        if (user?.confidenceScores?.contains(currentWord)!!) {
-            if (newConfidenceMastered > user?.confidenceScores[currentWord]?.toDouble()!!) {
+        if (user?.confidenceScores?.contains(currentWord + "/" + user!!.targetLanguage)!!) {
+            if (newConfidenceMastered > user?.confidenceScores[currentWord + "/" + user!!.targetLanguage]?.toDouble()!!) {
                 ivMastery.setImageResource(R.drawable.up_arrow)
             }
             else {
@@ -790,8 +790,8 @@ class CameraFragment : Fragment(), ObjectDetectorHelper.DetectorListener {
         val bytesString = android.util.Base64.encodeToString(bytes, android.util.Base64.NO_WRAP)
 
         var confidenceScore = 0.01
-        if (user!!.confidenceScores.contains(currentWord)) {
-            confidenceScore = user!!.confidenceScores.get(currentWord)!!
+        if (user!!.confidenceScores.contains(currentWord + "/" + user!!.targetLanguage)) {
+            confidenceScore = user!!.confidenceScores.get(currentWord + "/" + user!!.targetLanguage)!!
         }
 
         gradingViewModel.gradeSpeech(fullTranslation, user?.targetLanguage.toString(), bytesString, confidenceScore)
@@ -849,14 +849,14 @@ class CameraFragment : Fragment(), ObjectDetectorHelper.DetectorListener {
         val userScore = Score(null, word, user!!.targetLanguage, score, currentWord, System.currentTimeMillis(), feedback)
         user!!.scores.add(userScore)
 
-        if (!user!!.confidenceScores.contains(currentWord)) {
+        if (!user!!.confidenceScores.contains(currentWord + "/" + user!!.targetLanguage)) {
             user!!.wordsEncountered += 1
         }
 
         if (confidenceScore > 0.95) {
             user!!.wordsMastered += 1
         }
-        user!!.confidenceScores.put(currentWord, confidenceScore)
+        user!!.confidenceScores.put(currentWord + "/" + user!!.targetLanguage, confidenceScore)
 
         val json = JSONObject(gson.toJson(scoreRequest))
 

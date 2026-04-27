@@ -149,12 +149,12 @@ class KTQuestionsActivity : AppCompatActivity() {
             },
             updateConfidenceScore = { answerData, answerCount ->
                 val queue = Volley.newRequestQueue(this)
-                val url = "https://subopaquely-unirradiative-bradley.ngrok-free.dev/update-bkt-score-challenge/${user!!.confidenceScores[answerData.engWord]}/${answerData.correct}"
+                val url = "https://subopaquely-unirradiative-bradley.ngrok-free.dev/update-bkt-score-challenge/${user!!.confidenceScores[answerData.engWord + "/" + user!!.targetLanguage]}/${answerData.correct}"
 
                 val checkAnswerRequest = StringRequest(
                     Request.Method.GET, url,
                     { response ->
-                        user!!.confidenceScores[answerData.engWord] = response.toDouble()
+                        user!!.confidenceScores[answerData.engWord + "/" + user!!.targetLanguage] = response.toDouble()
                         Log.d("ChallengeRecyclerView", response)
 
                         if (answerCount == questionBank.size) {

@@ -44,6 +44,9 @@ import com.example.rosettascope.ReviseActivity
 import com.example.rosettascope.WordBankActivity
 import com.example.rosettascope.viewmodels.UserViewModel
 
+private var flagDrawable : Painter? = null
+private var strLanguage: String? = null
+
 @Composable
 fun HomeScreen(modifier: Modifier = Modifier, viewModel: UserViewModel = viewModel(LocalContext.current as ComponentActivity)) {
     val context = LocalContext.current
@@ -80,26 +83,8 @@ fun UserGreeting() {
     val targetLanguage = LocalContext.current.getSharedPreferences("USER", Context.MODE_PRIVATE)
         .getString("target_language", "").toString()
 
-    var flagDrawable : Painter? = null
-
-    when (targetLanguage) {
-        "de-DE" -> flagDrawable = painterResource(R.drawable.germany)
-        "fr-FR" -> flagDrawable = painterResource(R.drawable.france)
-        "es-ES" -> flagDrawable = painterResource(R.drawable.spain)
-        "vi-VN" -> flagDrawable = painterResource(R.drawable.vietnam)
-        "zh-CN" -> flagDrawable = painterResource(R.drawable.china)
-        "ar-SA" -> flagDrawable = painterResource(R.drawable.saudi_arabia)
-        "hi-IN" -> flagDrawable = painterResource(R.drawable.india)
-        "ko-KR" -> flagDrawable = painterResource(R.drawable.south_korea)
-        "ja-JP" -> flagDrawable = painterResource(R.drawable.japan)
-        "ru-RU" -> flagDrawable = painterResource(R.drawable.russia)
-        "sv-SE" -> flagDrawable = painterResource(R.drawable.sweden)
-        "fi-FI" -> flagDrawable = painterResource(R.drawable.finland)
-        "pl-PL" -> flagDrawable = painterResource(R.drawable.poland)
-        "it-IT" -> flagDrawable = painterResource(R.drawable.italy)
-        "nl-NL" -> flagDrawable = painterResource(R.drawable.netherlands)
-        else -> flagDrawable = painterResource(R.drawable.undiscovered)
-    }
+    getFlag(targetLanguage)
+    getStrLanguage(targetLanguage)
 
     Row(
         modifier = Modifier
@@ -119,7 +104,7 @@ fun UserGreeting() {
             .height(40.dp)
             .align(alignment = Alignment.CenterVertically)
         ) {
-            Text(text = "Hello!",
+            Text(text = strLanguage!!,
                 color = Color.White,
                 fontSize = 20.sp,
                 fontWeight = FontWeight.SemiBold
@@ -348,4 +333,47 @@ fun LockedActivityAlertDialog(
             }
         }
     )
+}
+
+@Composable
+private fun getFlag(targetLanguage: String) {
+    when (targetLanguage) {
+        "de-DE" -> flagDrawable = painterResource(R.drawable.germany)
+        "fr-FR" -> flagDrawable = painterResource(R.drawable.france)
+        "es-ES" -> flagDrawable = painterResource(R.drawable.spain)
+        "vi-VN" -> flagDrawable = painterResource(R.drawable.vietnam)
+        "zh-CN" -> flagDrawable = painterResource(R.drawable.china)
+        "ar-SA" -> flagDrawable = painterResource(R.drawable.saudi_arabia)
+        "hi-IN" -> flagDrawable = painterResource(R.drawable.india)
+        "ko-KR" -> flagDrawable = painterResource(R.drawable.south_korea)
+        "ja-JP" -> flagDrawable = painterResource(R.drawable.japan)
+        "ru-RU" -> flagDrawable = painterResource(R.drawable.russia)
+        "sv-SE" -> flagDrawable = painterResource(R.drawable.sweden)
+        "fi-FI" -> flagDrawable = painterResource(R.drawable.finland)
+        "pl-PL" -> flagDrawable = painterResource(R.drawable.poland)
+        "it-IT" -> flagDrawable = painterResource(R.drawable.italy)
+        "nl-NL" -> flagDrawable = painterResource(R.drawable.netherlands)
+        else -> flagDrawable = painterResource(R.drawable.undiscovered)
+    }
+}
+
+private fun getStrLanguage(targetLanguage: String) {
+    when (targetLanguage) {
+        "de-DE" -> strLanguage = "German"
+        "fr-FR" -> strLanguage = "French"
+        "es-ES" -> strLanguage = "Spanish"
+        "vi-VN" -> strLanguage = "Vietnamese"
+        "zh-CN" -> strLanguage = "Simplified Chinese"
+        "ar-SA" -> strLanguage = "Arabic"
+        "hi-IN" -> strLanguage = "Hindi"
+        "ko-KR" -> strLanguage = "Korean"
+        "ja-JP" -> strLanguage = "Japanese"
+        "ru-RU" -> strLanguage = "Russian"
+        "sv-SE" -> strLanguage = "Swedish"
+        "fi-FI" -> strLanguage = "Finnish"
+        "pl-PL" -> strLanguage = "Polish"
+        "it-IT" -> strLanguage = "Italian"
+        "nl-NL" -> strLanguage = "Dutch"
+        else -> strLanguage = "?"
+    }
 }

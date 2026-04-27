@@ -272,7 +272,7 @@ fun SignupScreen(modifier: Modifier = Modifier, navController: NavController) {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun DisplayLangSpinner() {
+private fun DisplayLangSpinner() {
     val parentOptions = listOf(
         "German",
         "French",

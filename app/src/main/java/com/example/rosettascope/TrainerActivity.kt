@@ -15,11 +15,8 @@ import com.android.volley.Response
 import com.android.volley.toolbox.HttpHeaderParser
 import com.android.volley.toolbox.StringRequest
 import com.android.volley.toolbox.Volley
-import com.example.rosettascope.models.Score
 import com.google.gson.Gson
-import com.google.gson.JsonObject
 import com.google.gson.reflect.TypeToken
-import org.json.JSONObject
 
 class TrainerActivity : AppCompatActivity() {
     var trainingWords = hashMapOf<String, Double>()
@@ -47,7 +44,6 @@ class TrainerActivity : AppCompatActivity() {
     fun retrieveWords(isAuto: String) {
         val email = getSharedPreferences("USER", MODE_PRIVATE).getString("email", "")
 
-        val gson = Gson()
         val queue = Volley.newRequestQueue(this)
         val url = "https://gaston-distant-unamicably.ngrok-free.dev/trainer/$email/$isAuto"
 

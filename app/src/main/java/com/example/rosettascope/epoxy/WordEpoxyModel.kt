@@ -10,9 +10,10 @@ import com.example.rosettascope.R
 import com.example.rosettascope.WordActivity
 import com.example.rosettascope.helpers.KotlinHelperModel
 
-class WordEpoxyModel(
+class  WordEpoxyModel(
     val word: String,
-    val discoveredWords: Map<String, Double>
+    val discoveredWords: Map<String, Double>,
+    val targetLanguage: String
 ) : KotlinHelperModel(R.layout.recycler_view_word_item) {
 
     val layout by bind<ConstraintLayout>(R.id.word_item_layout)
@@ -27,7 +28,7 @@ class WordEpoxyModel(
     override fun bind() {
         tvWord.text = word
 
-        if (!discoveredWords.contains(word)) {
+        if (!discoveredWords.contains(word + "/" + targetLanguage)) {
             imgView.setImageResource(R.drawable.undiscovered)
             progressBar.visibility = View.GONE
             tvMasteryLevel.visibility = View.GONE
@@ -46,19 +47,19 @@ class WordEpoxyModel(
             tvMasteryLevel.visibility = View.VISIBLE
             imgViewArrow.visibility = View.VISIBLE
 
-            when (discoveredWords.get(word)?.times(100)?.toInt()) {
+            when (discoveredWords.get(word + "/" + targetLanguage)?.times(100)?.toInt()) {
                 in 0..24 -> {
-                    progressBar.setProgress((discoveredWords.get(word)!!/0.25).times(100).toInt(), true)
+                    progressBar.setProgress((discoveredWords.get(word + "/" + targetLanguage)!!/0.25).times(100).toInt(), true)
                     tvMasteryLevel.text = "Beginner"
                 }
 
                 in 25..76 -> {
-                    progressBar.setProgress((discoveredWords.get(word)!!/0.77).times(100).toInt(), true)
+                    progressBar.setProgress((discoveredWords.get(word + "/" + targetLanguage)!!/0.77).times(100).toInt(), true)
                     tvMasteryLevel.text = "Intermediate"
                 }
 
                 in 77..94 -> {
-                    progressBar.setProgress((discoveredWords.get(word)!!/0.95).times(100).toInt(), true)
+                    progressBar.setProgress((discoveredWords.get(word + "/" + targetLanguage)!!/0.95).times(100).toInt(), true)
                     tvMasteryLevel.text = "Advanced"
                 }
 

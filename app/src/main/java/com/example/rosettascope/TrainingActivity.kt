@@ -568,7 +568,7 @@ class TrainingActivity : AppCompatActivity() {
         val allDone = completedExercises.values.all { it }
 
         if (allDone) {
-            finalMap.put(trainingQueue.peek().word, user!!.confidenceScores[trainingQueue.peek().word]!!)
+            finalMap.put(trainingQueue.peek().word  + "/" + user!!.targetLanguage, user!!.confidenceScores[trainingQueue.peek().word + "/" + user!!.targetLanguage]!!)
 
             parentDialog.dismiss()
 
@@ -689,8 +689,8 @@ class TrainingActivity : AppCompatActivity() {
             speakingResultCallback?.invoke(isCorrect)
             if (isCorrect) {
                 speakingDialog?.dismiss()
-                user!!.confidenceScores[trainingQueue.peek().word] = response.new_confidence_mastered
-                Log.d("UserConfidenceScore", user!!.confidenceScores[trainingQueue.peek().word].toString())
+                user!!.confidenceScores[trainingQueue.peek().word + "/" + user!!.targetLanguage] = response.new_confidence_mastered
+                Log.d("UserConfidenceScore", user!!.confidenceScores[trainingQueue.peek().word + "/" + user!!.targetLanguage].toString())
             }
             showGradeDialog(response.result, response.feedback)
             Log.d("GradeResult", response.result)
@@ -721,7 +721,7 @@ class TrainingActivity : AppCompatActivity() {
             currentItem.word,
             System.currentTimeMillis(),
             feedback,
-            originalMap[currentItem.word]!!
+            originalMap[currentItem.word + "/" + user!!.targetLanguage]!!
         )
 
         val json = JSONObject(gson.toJson(scoreRequest))
@@ -801,7 +801,7 @@ class TrainingActivity : AppCompatActivity() {
         gradingViewModel.gradeSpeech(refText,
             user?.targetLanguage.toString(),
             bytesString,
-            user?.confidenceScores[engWord]!!
+            user?.confidenceScores[engWord + "/" + user!!.targetLanguage]!!
         )
         showGradeLoadingDialog()
     }
@@ -823,13 +823,13 @@ class TrainingActivity : AppCompatActivity() {
 
     private fun updateConfidenceScoreWhenCorrect(word: String) {
         val queue = Volley.newRequestQueue(this)
-        val url = "https://subopaquely-unirradiative-bradley.ngrok-free.dev/update-bkt-score-challenge/${user!!.confidenceScores[word]}/${true}"
+        val url = "https://subopaquely-unirradiative-bradley.ngrok-free.dev/update-bkt-score-challenge/${user!!.confidenceScores[word + "/" + user!!.targetLanguage]}/${true}"
 
         val checkAnswerRequest = StringRequest(
             Request.Method.GET, url,
             { response ->
-                user!!.confidenceScores[word] = response.toDouble()
-                Log.d("UserConfidenceScore", user!!.confidenceScores[word].toString())
+                user!!.confidenceScores[word + "/" + user!!.targetLanguage] = response.toDouble()
+                Log.d("UserConfidenceScore", user!!.confidenceScores[word + "/" + user!!.targetLanguage].toString())
             },
             { error ->
                 Toast.makeText(

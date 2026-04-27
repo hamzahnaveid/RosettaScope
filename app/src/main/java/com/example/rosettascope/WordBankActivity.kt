@@ -128,19 +128,19 @@ class WordBankActivity : AppCompatActivity() {
                     WordFilter.ALL -> true
 
                     WordFilter.UNDISCOVERED ->
-                        !user!!.confidenceScores.containsKey(word)
+                        !user!!.confidenceScores.containsKey(word + "/" + user!!.targetLanguage)
 
                     WordFilter.DISCOVERED ->
-                        user!!.confidenceScores.containsKey(word)
+                        user!!.confidenceScores.containsKey(word + "/" + user!!.targetLanguage)
 
                     else ->
-                        getFilter(word, user!!.confidenceScores) == selectedFilter
+                        getFilter(word + "/" + user!!.targetLanguage, user!!.confidenceScores) == selectedFilter
                 }
             }
 
             val controller = WordEpoxyController()
             epoxyRecyclerView!!.setController(controller)
-            controller.setData(filteredWords, user!!.confidenceScores)
+            controller.setData(filteredWords, user!!.confidenceScores, user!!.targetLanguage)
         }
     }
 }

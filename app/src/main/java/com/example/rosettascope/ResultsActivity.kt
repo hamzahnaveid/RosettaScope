@@ -1,5 +1,6 @@
 package com.example.rosettascope
 
+import android.content.Context
 import android.content.Intent
 import android.media.MediaPlayer
 import android.os.Bundle
@@ -33,6 +34,9 @@ class ResultsActivity : AppCompatActivity() {
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom)
             insets
         }
+        val targetLanguage = getSharedPreferences("USER", Context.MODE_PRIVATE)
+            .getString("target_language", "").toString()
+
         mediaPlayer = MediaPlayer.create(this, R.raw.success_jingle)
         mediaPlayer?.start()
 
@@ -42,7 +46,7 @@ class ResultsActivity : AppCompatActivity() {
         val rvResults = findViewById<RecyclerView>(R.id.rv_results)
         rvResults.layoutManager = LinearLayoutManager(this)
         rvResults.addItemDecoration(DividerItemDecoration(this, DividerItemDecoration.VERTICAL))
-        rvResults.adapter = ResultsRecyclerViewAdapter(resultsMap, userMap)
+        rvResults.adapter = ResultsRecyclerViewAdapter(resultsMap, userMap, targetLanguage)
 
         val buttonContinueHome = findViewById<Button>(R.id.button_continue_home)
         buttonContinueHome.setOnClickListener {
