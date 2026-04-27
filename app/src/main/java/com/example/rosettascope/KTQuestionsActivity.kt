@@ -31,6 +31,7 @@ class KTQuestionsActivity : AppCompatActivity() {
     var questionBank = listOf<Score>()
     private var user: User? = null
     private var mediaPlayer: MediaPlayer? = null
+    private val finalMap = mutableMapOf<String, Double>()
     private val originalMap = mutableMapOf<String, Double>()
     private var timer: CountDownTimer? = null
 
@@ -154,7 +155,7 @@ class KTQuestionsActivity : AppCompatActivity() {
                 val checkAnswerRequest = StringRequest(
                     Request.Method.GET, url,
                     { response ->
-                        user!!.confidenceScores[answerData.engWord + "/" + user!!.targetLanguage] = response.toDouble()
+                        finalMap[answerData.engWord + "/" + user!!.targetLanguage] = response.toDouble()
                         Log.d("ChallengeRecyclerView", response)
 
                         if (answerCount == questionBank.size) {
@@ -205,7 +206,7 @@ class KTQuestionsActivity : AppCompatActivity() {
         timer!!.cancel()
 
         val intent = Intent(this@KTQuestionsActivity, ResultsActivity::class.java)
-        intent.putExtra("new_confidence_scores", HashMap(user!!.confidenceScores))
+        intent.putExtra("new_confidence_scores", finalMap as HashMap<String, Double>)
         intent.putExtra("user_confidence_scores", originalMap as HashMap<String, Double>)
         startActivity(intent)
     }
