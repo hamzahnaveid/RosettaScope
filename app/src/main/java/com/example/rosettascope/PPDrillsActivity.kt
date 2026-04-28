@@ -10,6 +10,7 @@ import android.os.Environment
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
+import android.widget.Button
 import android.widget.LinearLayout
 import android.widget.ProgressBar
 import android.widget.TextView
@@ -72,6 +73,23 @@ class PPDrillsActivity : AppCompatActivity() {
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom)
             insets
         }
+
+        val btnFinishDrill = findViewById<Button>(R.id.button_finish_drill)
+        btnFinishDrill.setOnClickListener {
+            val dialog = AlertDialog.Builder(this)
+                .setTitle("Finish Drills?")
+                .setMessage("By confirming, you will be shown your results for what you've done so far. Your progress up to now will be saved for next time.")
+                .setPositiveButton("Yes", DialogInterface.OnClickListener() { dialog, _ ->
+                    dialog.dismiss()
+                    toResultScreen()
+                })
+                .setNegativeButton("No", DialogInterface.OnClickListener() { dialog, _ ->
+                    dialog.dismiss()
+                })
+                .create()
+                .show()
+        }
+
         observeGradingViewModel()
         retrievePainPoints()
         retrieveUser()
@@ -92,6 +110,19 @@ class PPDrillsActivity : AppCompatActivity() {
 
                 tvCounter.text = "0/${painPoints.size}"
                 progressBar.max = painPoints.size
+
+                if (painPoints.isEmpty()) {
+                    val dialog = AlertDialog.Builder(this)
+                        .setTitle("No Pain Points To Review")
+                        .setMessage("You have no pain points to review right now. Come back when you've had some trouble learning a word.")
+                        .setPositiveButton("OK", DialogInterface.OnClickListener() { dialog, _ ->
+                            dialog.dismiss()
+                            val intent = Intent(this, HomeActivity::class.java)
+                            startActivity(intent)
+                        })
+                        .create()
+                        .show()
+                }
 
                 prefetchAudio(0)
                 setupRecyclerView()
@@ -286,6 +317,8 @@ class PPDrillsActivity : AppCompatActivity() {
                 val rv = findViewById<RecyclerView>(R.id.rv_challenge_drill)
                 val layoutManager = rv.layoutManager as LockableLinearLayoutManager
                 rv.adapter?.notifyItemChanged(currentIndex)
+
+                setScoreToTrained(painPoints[currentIndex].id!!)
 
                 attemptsCount = 0
                 currentIndex++
@@ -503,11 +536,32 @@ class PPDrillsActivity : AppCompatActivity() {
                     score,
                     "",
                     System.currentTimeMillis(),
-                    ""
+                    "",
+                    null
                 )
             )
         }
         return scores
+    }
+
+    private fun setScoreToTrained(scoreId: Int) {
+        val url = "https://gaston-distant-unamicably.ngrok-free.dev/update-score/$scoreId"
+
+        val updateScoreRequest = StringRequest(
+            Request.Method.PUT, url,
+            { response ->
+                Log.d("JavaDB", "Score updated")
+            },
+            { error ->
+                Toast.makeText(
+                    this,
+                    "Error connecting to server",
+                    Toast.LENGTH_SHORT
+                )
+                    .show()
+                Log.e("VolleyRequest", error.toString())
+            })
+        queue.add(updateScoreRequest)
     }
 
     private fun toResultScreen() {

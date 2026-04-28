@@ -704,7 +704,8 @@ class CameraFragment : Fragment(), ObjectDetectorHelper.DetectorListener {
                     score,
                     currentWord,
                     System.currentTimeMillis(),
-                    ""
+                    "",
+                    null
                 )
             )
         }
@@ -842,6 +843,8 @@ class CameraFragment : Fragment(), ObjectDetectorHelper.DetectorListener {
         val queue = Volley.newRequestQueue(context)
         val url = "https://gaston-distant-unamicably.ngrok-free.dev/add-score"
 
+        val trained = score >= 90
+
         val scoreRequest = ScoreRequest(
             user!!.email,
             word,
@@ -850,10 +853,11 @@ class CameraFragment : Fragment(), ObjectDetectorHelper.DetectorListener {
             currentWord,
             System.currentTimeMillis(),
             feedback,
+            trained,
             confidenceScore
         )
 
-        val userScore = Score(null, word, user!!.targetLanguage, score, currentWord, System.currentTimeMillis(), feedback)
+        val userScore = Score(null, word, user!!.targetLanguage, score, currentWord, System.currentTimeMillis(), feedback, trained)
         user!!.scores.add(userScore)
 
         if (!user!!.confidenceScores.contains(currentWord + "/" + user!!.targetLanguage)) {

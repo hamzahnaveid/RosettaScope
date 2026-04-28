@@ -557,7 +557,8 @@ class TrainingActivity : AppCompatActivity() {
                     score,
                     "",
                     System.currentTimeMillis(),
-                    ""
+                    "",
+                    null
                 )
             )
         }
@@ -713,6 +714,8 @@ class TrainingActivity : AppCompatActivity() {
         val queue = Volley.newRequestQueue(this)
         val url = "https://gaston-distant-unamicably.ngrok-free.dev/add-score"
 
+        val trained = score >= 90
+
         val scoreRequest = ScoreRequest(
             user!!.email,
             word,
@@ -721,6 +724,7 @@ class TrainingActivity : AppCompatActivity() {
             currentItem.word,
             System.currentTimeMillis(),
             feedback,
+            trained,
             originalMap[currentItem.word + "/" + user!!.targetLanguage]!!
         )
 

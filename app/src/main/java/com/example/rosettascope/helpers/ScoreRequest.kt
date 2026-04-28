@@ -8,5 +8,6 @@ data class ScoreRequest(
     val engWord: String,
     val timestamp: Long,
     val feedback: String,
+    val trained: Boolean,
     val confidenceScore: Double
 )
