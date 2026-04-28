@@ -624,7 +624,7 @@ class TrainingActivity : AppCompatActivity() {
 
         for (i in 0 until user!!.scores.size) {
             val score = user!!.scores[i]
-            if (score.engWord == word) {
+            if (score.engWord == word  && score.language == user!!.targetLanguage) {
                 feedbackList.add(score.feedback)
             }
         }
