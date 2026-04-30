@@ -13,6 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+// This file is made up of code that has been adapted from Google's MediaPipe Object Detection example code
+// https://github.com/google-ai-edge/mediapipe-samples/blob/main/examples/object_detection/android/app/src/main/java/com/google/mediapipe/examples/objectdetection/MainViewModel.kt
 package com.example.rosettascope.viewmodels
 
 import androidx.lifecycle.ViewModel

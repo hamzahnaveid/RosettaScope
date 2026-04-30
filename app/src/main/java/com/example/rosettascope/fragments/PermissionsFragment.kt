@@ -1,3 +1,6 @@
+// This file is made up of code that has been adapted from Google's MediaPipe Object Detection example code
+// https://github.com/google-ai-edge/mediapipe-samples/blob/main/examples/object_detection/android/app/src/main/java/com/google/mediapipe/examples/objectdetection/fragments/PermissionsFragment.kt
+
 package com.example.rosettascope.fragments
 
 import  android.Manifest
